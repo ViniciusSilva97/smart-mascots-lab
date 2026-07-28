@@ -40,26 +40,26 @@ export class ByteMotionEngine {
 
   play(motion: Motion) {
     this.callbacks.onMotionChange(motion)
-    this.replaceTimeline(this.createMotion(motion))
+    this.replaceTimeline(() => this.createMotion(motion))
   }
 
   playDemo() {
-    const demo = gsap.timeline()
-    demo
-      .addLabel('entrada')
-      .add(this.createWalk(false, 210))
-      .addLabel('observa')
-      .add(this.createThink(false))
-      .addLabel('apresenta')
-      .add(this.createPoint(false))
-      .addLabel('comemora')
-      .add(this.createCelebrate(false))
-      .addLabel('saida')
-      .add(this.createWalk(false, -210))
-      .call(() => this.play('idle'))
-
     this.callbacks.onMotionChange('walk')
-    this.replaceTimeline(demo)
+    this.replaceTimeline(() => {
+      const demo = gsap.timeline()
+      return demo
+        .addLabel('entrada')
+        .add(this.createWalk(false, 210))
+        .addLabel('observa')
+        .add(this.createThink(false))
+        .addLabel('apresenta')
+        .add(this.createPoint(false))
+        .addLabel('comemora')
+        .add(this.createCelebrate(false))
+        .addLabel('saida')
+        .add(this.createWalk(false, -210))
+        .call(() => this.play('idle'))
+    })
   }
 
   togglePause() {
@@ -83,10 +83,10 @@ export class ByteMotionEngine {
     this.timeline.timeScale(speed)
   }
 
-  private replaceTimeline(next: gsap.core.Timeline) {
+  private replaceTimeline(createTimeline: () => gsap.core.Timeline) {
     this.timeline.kill()
     this.resetPose()
-    this.timeline = next
+    this.timeline = createTimeline()
     this.timeline
       .timeScale(this.speed)
       .eventCallback('onUpdate', () => this.callbacks.onProgress(this.timeline.progress()))
