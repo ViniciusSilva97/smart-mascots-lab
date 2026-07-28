@@ -7,7 +7,6 @@
   --panel: #111514;
   --line: #2b312f;
   --muted: #8d9692;
-  --motion-speed: 1s;
   --mascot-scale: 1;
   color: #f4f3e8;
   background: var(--ink);
@@ -81,6 +80,8 @@ kbd { border: 1px solid #464d4a; padding: 2px 4px; color: #a7afab; }
 .stage-column { min-width: 0; display: flex; flex-direction: column; }
 .stage-toolbar { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid var(--line); font: 8px 'Press Start 2P'; color: #858e8a; }
 .stage-toolbar button { border: 1px solid #3a413e; background: #171b1a; padding: 8px 10px; font: 7px 'Press Start 2P'; cursor: pointer; }
+.transport { display: flex; gap: 6px; }
+.transport button:first-child { color: var(--yellow); border-color: #665f18; }
 .stage { position: relative; flex: 1; min-height: 535px; overflow: hidden; background: #181d1b; transition: background .2s; }
 .stage[data-background="light"] { background: #e8e5d7; }
 .stage[data-background="green"] { background: #1f482d; }
@@ -105,24 +106,12 @@ kbd { border: 1px solid #464d4a; padding: 2px 4px; color: #a7afab; }
 .leg { width: 16px; height: 30px; top: 111px; }
 .leg-left { left: 27px; } .leg-right { right: 27px; }
 
-.byte[data-motion="idle"] { animation: idle var(--motion-speed) steps(2) infinite; }
-.byte[data-motion="walk"] .arm-left, .byte[data-motion="walk"] .leg-right { animation: limb var(--motion-speed) steps(2) infinite; }
-.byte[data-motion="walk"] .arm-right, .byte[data-motion="walk"] .leg-left { animation: limb-reverse var(--motion-speed) steps(2) infinite; }
-.byte-wrap:has(.byte[data-motion="walk"]) { animation: travel calc(var(--motion-speed) * 4) linear infinite alternate; }
-.byte[data-motion="point"] .arm-right { transform: rotate(-90deg) translateY(-4px); animation: point var(--motion-speed) steps(2) infinite; }
-.byte[data-motion="think"] { animation: think calc(var(--motion-speed) * 1.5) steps(3) infinite; }
-.byte[data-motion="think"] .arm-right { transform: rotate(135deg) translate(-4px, -8px); }
-.byte[data-motion="celebrate"] { animation: celebrate var(--motion-speed) steps(2) infinite; }
-.byte[data-motion="celebrate"] .arm-left { transform: rotate(145deg); }
-.byte[data-motion="celebrate"] .arm-right { transform: rotate(-145deg); }
-.paused, .paused * { animation-play-state: paused !important; }
-@keyframes idle { 50% { transform: translateY(-4px); } }
-@keyframes limb { 50% { transform: rotate(28deg); } }
-@keyframes limb-reverse { 50% { transform: rotate(-28deg); } }
-@keyframes travel { from { left: 25%; } to { left: 75%; } }
-@keyframes point { 50% { transform: rotate(-82deg) translateY(-4px); } }
-@keyframes think { 33% { transform: rotate(-3deg); } 66% { transform: rotate(3deg); } }
-@keyframes celebrate { 50% { transform: translateY(-28px); } }
+.timeline-control {
+  height: 48px; display: grid; grid-template-columns: 34px 1fr 38px; gap: 10px;
+  align-items: center; padding: 0 16px; border-top: 1px solid var(--line);
+  background: #0d100f; color: #737c78; font: 7px 'Press Start 2P';
+}
+.timeline-control input { width: 100%; accent-color: var(--green); }
 
 .settings-panel label { display: flex; justify-content: space-between; margin: 22px 0 10px; color: #909995; font-size: 9px; font-weight: 700; }
 .settings-panel output { color: var(--yellow); }

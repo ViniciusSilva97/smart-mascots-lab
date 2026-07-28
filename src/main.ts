@@ -1,6 +1,7 @@
 import './style.css'
+import { ByteMotionEngine, type Motion } from './motion-engine'
 
-type Motion = 'idle' | 'walk' | 'point' | 'think' | 'celebrate'
+const root = document.documentElement
 
 const motions: Array<{ id: Motion; label: string; icon: string }> = [
   { id: 'idle', label: 'Parado', icon: '●' },
@@ -24,7 +25,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 01</p>
+      <p class="eyebrow">// PROTÓTIPO 02 • GSAP</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -50,7 +51,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <div class="stage-column">
         <div class="stage-toolbar">
           <span><i></i> PREVIEW EM TEMPO REAL</span>
-          <button id="pause" type="button" aria-pressed="false">Ⅱ &nbsp;PAUSAR</button>
+          <div class="transport">
+            <button id="demo" type="button">▶ &nbsp;DEMO</button>
+            <button id="restart" type="button" aria-label="Reiniciar">↺</button>
+            <button id="pause" type="button" aria-pressed="false">Ⅱ &nbsp;PAUSAR</button>
+          </div>
         </div>
         <div class="stage" id="stage">
           <div class="grid"></div>
@@ -66,6 +71,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           </div>
           <div class="stage-floor"></div>
           <span class="stage-note">PERSONAGEM PROVISÓRIO • CSS PIXEL ART</span>
+        </div>
+        <div class="timeline-control">
+          <span>0:00</span>
+          <input id="progress" type="range" min="0" max="1000" value="0" aria-label="Progresso da animação">
+          <span id="progress-value">0%</span>
         </div>
       </div>
 
@@ -86,7 +96,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <dl>
           <div><dt>ESTADO</dt><dd id="state">PARADO</dd></div>
           <div><dt>FPS</dt><dd>60</dd></div>
-          <div><dt>MODO</dt><dd>CSS</dd></div>
+          <div><dt>MODO</dt><dd>GSAP</dd></div>
         </dl>
       </aside>
     </section>
@@ -98,12 +108,13 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </footer>
 `
 
-const root = document.documentElement
 const byte = document.querySelector<HTMLElement>('#byte')!
 const stage = document.querySelector<HTMLElement>('#stage')!
 const state = document.querySelector<HTMLElement>('#state')!
 const speech = document.querySelector<HTMLElement>('#speech')!
 const pause = document.querySelector<HTMLButtonElement>('#pause')!
+const progress = document.querySelector<HTMLInputElement>('#progress')!
+const progressValue = document.querySelector<HTMLElement>('#progress-value')!
 
 const speechByMotion: Record<Motion, string> = {
   idle: 'Olá! Eu sou o Byte.',
@@ -113,22 +124,33 @@ const speechByMotion: Record<Motion, string> = {
   celebrate: 'Compra concluída!',
 }
 
-function setMotion(motion: Motion) {
-  byte.dataset.motion = motion
+const engine = new ByteMotionEngine(byte, {
+  onMotionChange(motion) {
+    byte.dataset.motion = motion
   state.textContent = motions.find(item => item.id === motion)!.label.toUpperCase()
   speech.textContent = speechByMotion[motion]
   document.querySelectorAll('.motion-button').forEach(button => {
     button.classList.toggle('active', (button as HTMLElement).dataset.motion === motion)
   })
-}
+  },
+  onProgress(value) {
+    const percent = Math.round(value * 100)
+    progress.value = String(Math.round(value * 1000))
+    progressValue.textContent = `${percent}%`
+  },
+  onPlayStateChange(paused) {
+    pause.setAttribute('aria-pressed', String(paused))
+    pause.innerHTML = paused ? '▶ &nbsp;CONTINUAR' : 'Ⅱ &nbsp;PAUSAR'
+  },
+})
 
 document.querySelectorAll<HTMLButtonElement>('.motion-button').forEach(button => {
-  button.addEventListener('click', () => setMotion(button.dataset.motion as Motion))
+  button.addEventListener('click', () => engine.play(button.dataset.motion as Motion))
 })
 
 const speed = document.querySelector<HTMLInputElement>('#speed')!
 speed.addEventListener('input', () => {
-  root.style.setProperty('--motion-speed', `${1 / Number(speed.value)}s`)
+  engine.setSpeed(Number(speed.value))
   document.querySelector<HTMLOutputElement>('#speed-value')!.value = `${Number(speed.value).toFixed(1)}×`
 })
 
@@ -146,13 +168,21 @@ document.querySelectorAll<HTMLButtonElement>('.bg-option').forEach(button => {
 })
 
 pause.addEventListener('click', () => {
-  const paused = pause.getAttribute('aria-pressed') === 'true'
-  pause.setAttribute('aria-pressed', String(!paused))
-  pause.innerHTML = paused ? 'Ⅱ &nbsp;PAUSAR' : '▶ &nbsp;CONTINUAR'
-  document.querySelector<HTMLElement>('#byte-wrap')!.classList.toggle('paused', !paused)
+  engine.togglePause()
 })
+
+document.querySelector<HTMLButtonElement>('#restart')!.addEventListener('click', () => engine.restart())
+document.querySelector<HTMLButtonElement>('#demo')!.addEventListener('click', () => {
+  speech.textContent = 'Demonstração completa iniciada!'
+  engine.playDemo()
+})
+progress.addEventListener('input', () => engine.setProgress(Number(progress.value) / 1000))
 
 window.addEventListener('keydown', event => {
   const index = Number(event.key) - 1
-  if (motions[index]) setMotion(motions[index].id)
+  if (motions[index]) engine.play(motions[index].id)
+  if (event.code === 'Space') {
+    event.preventDefault()
+    engine.togglePause()
+  }
 })
