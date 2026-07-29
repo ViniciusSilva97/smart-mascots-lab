@@ -1,9 +1,11 @@
 import { gsap } from 'gsap'
 
 export type Motion = 'idle' | 'walk' | 'point' | 'think' | 'celebrate'
+export type LocomotionState = 'idle' | 'preparing' | 'walking' | 'braking'
 
 type EngineCallbacks = {
   onMotionChange: (motion: Motion) => void
+  onLocomotionStateChange: (state: LocomotionState) => void
   onProgress: (progress: number) => void
   onPlayStateChange: (paused: boolean) => void
 }
@@ -20,6 +22,9 @@ export class ByteMotionEngine {
   private readonly callbacks: EngineCallbacks
   private timeline: gsap.core.Timeline
   private speed = 1
+  private positionX = 0
+  private direction: -1 | 1 = 1
+  private maxPosition = 340
 
   constructor(root: HTMLElement, callbacks: EngineCallbacks) {
     this.byte = root
@@ -39,8 +44,29 @@ export class ByteMotionEngine {
   }
 
   play(motion: Motion) {
+    if (motion === 'walk') {
+      this.walk(this.direction)
+      return
+    }
     this.callbacks.onMotionChange(motion)
+    this.callbacks.onLocomotionStateChange('idle')
     this.replaceTimeline(() => this.createMotion(motion))
+  }
+
+  walk(direction: -1 | 1, running = false) {
+    const distance = running ? 320 : 220
+    this.walkTo(this.positionX + distance * direction, running)
+  }
+
+  walkTo(targetX: number, running = false) {
+    const clampedTarget = gsap.utils.clamp(-this.maxPosition, this.maxPosition, targetX)
+    if (Math.abs(clampedTarget - this.positionX) < 12) {
+      this.play('idle')
+      return
+    }
+
+    this.callbacks.onMotionChange('walk')
+    this.replaceTimeline(() => this.createLocomotion(this.positionX, clampedTarget, running, true))
   }
 
   playDemo() {
@@ -49,7 +75,7 @@ export class ByteMotionEngine {
       const demo = gsap.timeline()
       return demo
         .addLabel('entrada')
-        .add(this.createWalk(false, 210))
+        .add(this.createLocomotion(this.positionX, 210, false, false))
         .addLabel('observa')
         .add(this.createThink(false))
         .addLabel('apresenta')
@@ -57,8 +83,11 @@ export class ByteMotionEngine {
         .addLabel('comemora')
         .add(this.createCelebrate(false))
         .addLabel('saida')
-        .add(this.createWalk(false, -210))
-        .call(() => this.play('idle'))
+        .add(this.createLocomotion(210, -210, true, false))
+        .call(() => {
+          this.positionX = -210
+          this.play('idle')
+        })
     })
   }
 
@@ -83,6 +112,12 @@ export class ByteMotionEngine {
     this.timeline.timeScale(speed)
   }
 
+  setBounds(maxPosition: number) {
+    this.maxPosition = Math.max(60, maxPosition)
+    this.positionX = gsap.utils.clamp(-this.maxPosition, this.maxPosition, this.positionX)
+    gsap.set(this.wrap, { x: this.positionX })
+  }
+
   private replaceTimeline(createTimeline: () => gsap.core.Timeline) {
     this.timeline.kill()
     this.resetPose()
@@ -96,15 +131,15 @@ export class ByteMotionEngine {
 
   private resetPose() {
     gsap.killTweensOf([this.wrap, this.byte, this.head, this.antenna, this.eyes, this.smile, this.arms, this.legs])
-    gsap.set(this.wrap, { x: 0, y: 0 })
+    gsap.set(this.wrap, { x: this.positionX, y: 0 })
     gsap.set([this.byte, this.head, this.antenna, this.eyes, this.smile, this.arms, this.legs], {
       clearProps: 'x,y,rotation,scaleX,scaleY,opacity',
     })
+    gsap.set(this.byte, { scaleX: this.direction })
   }
 
   private createMotion(motion: Motion) {
     switch (motion) {
-      case 'walk': return this.createWalk()
       case 'point': return this.createPoint()
       case 'think': return this.createThink()
       case 'celebrate': return this.createCelebrate()
@@ -123,21 +158,48 @@ export class ByteMotionEngine {
     return timeline
   }
 
-  private createWalk(repeat = true, distance = 250) {
-    const timeline = gsap.timeline({ repeat: repeat ? -1 : 0 })
-    const direction = Math.sign(distance) || 1
+  private createLocomotion(fromX: number, targetX: number, running: boolean, settleToIdle: boolean) {
+    const timeline = gsap.timeline()
+    const direction = (targetX >= fromX ? 1 : -1) as -1 | 1
+    const distance = Math.abs(targetX - fromX)
+    const pixelsPerSecond = running ? 280 : 165
+    const travelDuration = Math.max(0.5, distance / pixelsPerSecond)
+    const strideDuration = running ? 0.14 : 0.22
+    const repeats = Math.max(1, Math.ceil(travelDuration / (strideDuration * 2)) * 2 - 1)
+    const anticipation = running ? 0.12 : 0.2
 
     timeline
-      .to(this.byte, { y: 5, scaleY: 0.95, duration: 0.14, ease: 'power2.in' })
-      .to(this.byte, { y: 0, scaleY: 1, duration: 0.12, ease: 'power2.out' })
-      .to(this.wrap, { x: distance, duration: 1.35, ease: 'none' }, 0.26)
-      .to(this.arms[0], { rotation: 24 * direction, duration: 0.22, yoyo: true, repeat: 5, ease: 'sine.inOut' }, 0.26)
-      .to(this.arms[1], { rotation: -24 * direction, duration: 0.22, yoyo: true, repeat: 5, ease: 'sine.inOut' }, 0.26)
-      .to(this.legs[0], { rotation: -20 * direction, duration: 0.22, yoyo: true, repeat: 5, ease: 'sine.inOut' }, 0.26)
-      .to(this.legs[1], { rotation: 20 * direction, duration: 0.22, yoyo: true, repeat: 5, ease: 'sine.inOut' }, 0.26)
-      .to(this.byte, { y: -5, duration: 0.11, yoyo: true, repeat: 11, ease: 'sine.inOut' }, 0.26)
-      .to(this.wrap, { x: distance + 8 * direction, duration: 0.12, ease: 'power2.out' })
-      .to(this.wrap, { x: distance, duration: 0.18, ease: 'back.out(2)' })
+      .call(() => {
+        this.direction = direction
+        this.callbacks.onLocomotionStateChange('preparing')
+      })
+      .to(this.byte, { scaleX: direction, duration: 0.12, ease: 'power2.inOut' })
+      .to(this.byte, {
+        y: running ? 7 : 5,
+        scaleY: running ? 0.9 : 0.94,
+        rotation: -3 * direction,
+        duration: anticipation,
+        ease: 'power2.in',
+      })
+      .call(() => this.callbacks.onLocomotionStateChange('walking'))
+      .to(this.byte, { y: 0, scaleY: 1, rotation: running ? 7 * direction : 3 * direction, duration: 0.14, ease: 'power2.out' })
+      .to(this.wrap, { x: targetX, duration: travelDuration, ease: 'power1.inOut' }, '<')
+      .to(this.arms[0], { rotation: running ? 38 : 25, duration: strideDuration, yoyo: true, repeat: repeats, ease: 'sine.inOut' }, '<')
+      .to(this.arms[1], { rotation: running ? -38 : -25, duration: strideDuration, yoyo: true, repeat: repeats, ease: 'sine.inOut' }, '<')
+      .to(this.legs[0], { rotation: running ? -31 : -21, duration: strideDuration, yoyo: true, repeat: repeats, ease: 'sine.inOut' }, '<')
+      .to(this.legs[1], { rotation: running ? 31 : 21, duration: strideDuration, yoyo: true, repeat: repeats, ease: 'sine.inOut' }, '<')
+      .to(this.byte, { y: running ? -8 : -5, duration: strideDuration / 2, yoyo: true, repeat: repeats * 2 + 1, ease: 'sine.inOut' }, '<')
+      .call(() => this.callbacks.onLocomotionStateChange('braking'), undefined, `>-${running ? 0.22 : 0.3}`)
+      .to(this.wrap, { x: targetX + 7 * direction, duration: 0.1, ease: 'power2.out' })
+      .to(this.wrap, { x: targetX, duration: 0.2, ease: 'back.out(2)' })
+      .to([this.arms, this.legs], { rotation: 0, duration: 0.18, ease: 'power2.out' }, '<')
+      .to(this.byte, { y: 4, rotation: 0, scaleY: 0.95, duration: 0.12 }, '<')
+      .to(this.byte, { y: 0, scaleY: 1, duration: 0.2, ease: 'back.out(2)' })
+      .call(() => {
+        this.positionX = targetX
+        this.callbacks.onLocomotionStateChange('idle')
+        if (settleToIdle) this.play('idle')
+      })
     return timeline
   }
 

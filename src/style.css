@@ -88,6 +88,15 @@ kbd { border: 1px solid #464d4a; padding: 2px 4px; color: #a7afab; }
 .grid { position: absolute; inset: 0; opacity: .12; background-image: linear-gradient(#91a099 1px, transparent 1px), linear-gradient(90deg, #91a099 1px, transparent 1px); background-size: 32px 32px; }
 .stage-floor { position: absolute; left: 12%; right: 12%; bottom: 75px; height: 2px; background: #4c5551; box-shadow: 0 10px 30px #000; }
 .stage-note { position: absolute; left: 16px; bottom: 15px; color: #68716d; font: 6px 'Press Start 2P'; }
+.target-marker {
+  position: absolute; z-index: 2; bottom: 68px; width: 16px; height: 8px;
+  border: 2px solid var(--green); border-top: 0; opacity: 0;
+  transform: translateX(-50%) scale(.5); pointer-events: none;
+}
+.target-marker.visible { animation: target-pulse .6s steps(3) 2; }
+@keyframes target-pulse {
+  50% { opacity: 1; transform: translateX(-50%) scale(1.25); box-shadow: 0 0 12px var(--green); }
+}
 .speech { position: absolute; z-index: 3; left: 50%; top: 74px; transform: translateX(-50%); width: max-content; max-width: 80%; background: #f4f1df; color: #111; padding: 13px 15px; font: 9px 'Press Start 2P'; box-shadow: 5px 5px 0 #000; }
 .speech::after { content: ''; position: absolute; bottom: -10px; left: 50%; border: 6px solid transparent; border-top-color: #f4f1df; }
 
@@ -116,6 +125,15 @@ kbd { border: 1px solid #464d4a; padding: 2px 4px; color: #a7afab; }
 .settings-panel label { display: flex; justify-content: space-between; margin: 22px 0 10px; color: #909995; font-size: 9px; font-weight: 700; }
 .settings-panel output { color: var(--yellow); }
 input[type="range"] { width: 100%; accent-color: var(--yellow); }
+.locomotion-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 16px; }
+.locomotion-buttons button {
+  min-width: 0; padding: 10px 3px; border: 1px solid #3b433f; background: #171b1a;
+  color: var(--yellow); cursor: pointer; font: 14px 'Press Start 2P';
+}
+.locomotion-buttons button:hover { border-color: var(--yellow); background: rgba(245, 223, 32, .08); }
+.locomotion-buttons small { display: block; margin-top: 7px; color: #8b9490; font: 5px 'Press Start 2P'; }
+.click-tip { color: #68716d; font-size: 9px; line-height: 1.5; margin: 13px 0 0; }
+.click-tip strong { color: var(--green); }
 .background-options { display: flex; gap: 9px; margin-top: 16px; }
 .bg-option { width: 36px; height: 30px; border: 2px solid #343a38; background: #181d1b; cursor: pointer; }
 .bg-option:nth-child(2) { background: #e8e5d7; }

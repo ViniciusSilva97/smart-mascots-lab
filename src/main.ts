@@ -1,5 +1,5 @@
 import './style.css'
-import { ByteMotionEngine, type Motion } from './motion-engine'
+import { ByteMotionEngine, type LocomotionState, type Motion } from './motion-engine'
 
 const root = document.documentElement
 
@@ -25,7 +25,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 02 • GSAP</p>
+      <p class="eyebrow">// PROTÓTIPO 03 • LOCOMOÇÃO</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -59,6 +59,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         </div>
         <div class="stage" id="stage">
           <div class="grid"></div>
+          <div class="target-marker" id="target-marker" aria-hidden="true"></div>
           <div class="speech" id="speech">Olá! Eu sou o Byte.</div>
           <div class="byte-wrap" id="byte-wrap">
             <div class="byte" id="byte" data-motion="idle" role="img" aria-label="Byte, mascote pixelado provisório">
@@ -86,6 +87,14 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <label for="scale">ESCALA <output id="scale-value">100%</output></label>
         <input id="scale" type="range" min="60" max="150" value="100" step="5">
         <div class="separator"></div>
+        <span class="panel-label">LOCOMOÇÃO</span>
+        <div class="locomotion-buttons">
+          <button id="walk-left" type="button">←<small>ANDAR</small></button>
+          <button id="run" type="button">⇧<small>CORRER</small></button>
+          <button id="walk-right" type="button">→<small>ANDAR</small></button>
+        </div>
+        <p class="click-tip">Clique no palco para escolher o destino. Use <strong>Shift</strong> para correr.</p>
+        <div class="separator"></div>
         <span class="panel-label">AMBIENTE</span>
         <div class="background-options">
           <button class="bg-option active" data-bg="dark" aria-label="Fundo escuro"></button>
@@ -94,7 +103,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         </div>
         <div class="separator"></div>
         <dl>
-          <div><dt>ESTADO</dt><dd id="state">PARADO</dd></div>
+          <div><dt>ESTADO</dt><dd id="state">IDLE</dd></div>
           <div><dt>FPS</dt><dd>60</dd></div>
           <div><dt>MODO</dt><dd>GSAP</dd></div>
         </dl>
@@ -115,6 +124,14 @@ const speech = document.querySelector<HTMLElement>('#speech')!
 const pause = document.querySelector<HTMLButtonElement>('#pause')!
 const progress = document.querySelector<HTMLInputElement>('#progress')!
 const progressValue = document.querySelector<HTMLElement>('#progress-value')!
+const targetMarker = document.querySelector<HTMLElement>('#target-marker')!
+
+const locomotionLabels: Record<LocomotionState, string> = {
+  idle: 'IDLE',
+  preparing: 'PREPARANDO',
+  walking: 'CAMINHANDO',
+  braking: 'FREANDO',
+}
 
 const speechByMotion: Record<Motion, string> = {
   idle: 'Olá! Eu sou o Byte.',
@@ -133,6 +150,9 @@ const engine = new ByteMotionEngine(byte, {
     button.classList.toggle('active', (button as HTMLElement).dataset.motion === motion)
   })
   },
+  onLocomotionStateChange(locomotionState) {
+    state.textContent = locomotionLabels[locomotionState]
+  },
   onProgress(value) {
     const percent = Math.round(value * 100)
     progress.value = String(Math.round(value * 1000))
@@ -144,8 +164,16 @@ const engine = new ByteMotionEngine(byte, {
   },
 })
 
+const updateStageBounds = () => engine.setBounds(stage.clientWidth / 2 - 70)
+updateStageBounds()
+window.addEventListener('resize', updateStageBounds)
+
 document.querySelectorAll<HTMLButtonElement>('.motion-button').forEach(button => {
-  button.addEventListener('click', () => engine.play(button.dataset.motion as Motion))
+  button.addEventListener('click', () => {
+    const motion = button.dataset.motion as Motion
+    if (motion === 'walk') engine.walk(1)
+    else engine.play(motion)
+  })
 })
 
 const speed = document.querySelector<HTMLInputElement>('#speed')!
@@ -178,11 +206,35 @@ document.querySelector<HTMLButtonElement>('#demo')!.addEventListener('click', ()
 })
 progress.addEventListener('input', () => engine.setProgress(Number(progress.value) / 1000))
 
+document.querySelector<HTMLButtonElement>('#walk-left')!.addEventListener('click', () => engine.walk(-1))
+document.querySelector<HTMLButtonElement>('#walk-right')!.addEventListener('click', () => engine.walk(1))
+document.querySelector<HTMLButtonElement>('#run')!.addEventListener('click', () => engine.walk(1, true))
+
+stage.addEventListener('click', event => {
+  const rect = stage.getBoundingClientRect()
+  const localX = event.clientX - rect.left
+  const limit = Math.max(80, rect.width / 2 - 70)
+  const targetX = Math.max(-limit, Math.min(limit, localX - rect.width / 2))
+
+  targetMarker.style.left = `${localX}px`
+  targetMarker.classList.remove('visible')
+  requestAnimationFrame(() => targetMarker.classList.add('visible'))
+  engine.walkTo(targetX, event.shiftKey)
+})
+
 window.addEventListener('keydown', event => {
   const index = Number(event.key) - 1
   if (motions[index]) engine.play(motions[index].id)
   if (event.code === 'Space') {
     event.preventDefault()
     engine.togglePause()
+  }
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    engine.walk(-1, event.shiftKey)
+  }
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    engine.walk(1, event.shiftKey)
   }
 })
