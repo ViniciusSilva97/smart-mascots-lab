@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - feature/robustness-integration-tests
+    paths:
+      - ".github/workflows/browser-tests.yml"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.ts"
+      - "src/**"
+      - "tests/**"
   pull_request:
 
 permissions:
