@@ -43,7 +43,7 @@ feature/performance-accessibility
 Commit de implementação:
 
 ```text
-A confirmar após a publicação.
+f4d387bf53602310d09e9eec5997d541f4d019ed
 feat: add performance and accessibility
 ```
 
@@ -61,7 +61,7 @@ feat: add performance and accessibility
 | Protótipo 05 | `feature/attention-engine` | `efa16b2` |
 | Protótipo 06 | `feature/object-interaction-engine` | `6fb2e8f` |
 | Protótipo 07 | `feature/state-orchestrator` | `4bfd05f` |
-| Protótipo 08 | `feature/performance-accessibility` | a confirmar |
+| Protótipo 08 | `feature/performance-accessibility` | `f4d387b` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -563,7 +563,7 @@ Próximo passo:
 ### 2026-07-30 — Protótipo 08
 
 - **Branch:** `feature/performance-accessibility`
-- **Commit:** a confirmar após a publicação.
+- **Commit:** `f4d387bf53602310d09e9eec5997d541f4d019ed`.
 - **Objetivo:** medir fluidez real e respeitar preferências de movimento.
 - **Mudanças:** monitor `requestAnimationFrame`, FPS, frame médio, P95,
   quedas, meta de 60/120 Hz, qualidade, pausa por visibilidade, conjunto de
