@@ -48,6 +48,8 @@ Por isso, a ordem adotada é:
 | GSAP | Timelines, easing, sincronização e controle dos movimentos |
 | Vite | Servidor local, atualização rápida e build |
 | Vitest | Testes automatizados das regras de orquestração |
+| Playwright | Testes de integração em Chromium real |
+| GitHub Actions | Execução reproduzível dos testes de navegador |
 
 ### 3.1 Por que GSAP?
 
@@ -76,6 +78,9 @@ a um jogo, com cenas, colisões e física.
 
 ```text
 smart-mascots-lab/
+├── .github/
+│   └── workflows/
+│       └── browser-tests.yml
 ├── docs/
 │   └── TECHNICAL_GUIDE.md
 ├── public/
@@ -87,7 +92,11 @@ smart-mascots-lab/
 │   ├── state-orchestrator.ts
 │   ├── state-orchestrator.test.ts
 │   └── style.css
+├── tests/
+│   └── browser/
+│       └── lab.spec.ts
 ├── AI_CONTEXT.md
+├── playwright.config.ts
 ├── README.md
 ├── index.html
 ├── package.json
@@ -117,10 +126,10 @@ Cada comando deve exibir uma versão.
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/performance-accessibility
+git switch feature/robustness-integration-tests
 ```
 
-O `git switch` escolhe a branch do Protótipo 08. Ela já contém os protótipos
+O `git switch` escolhe a branch do Protótipo 09. Ela já contém os protótipos
 anteriores e a documentação em seu histórico.
 
 ### 5.3 Instalar e iniciar
@@ -133,6 +142,12 @@ npm run dev
 `npm install` lê `package.json` e `package-lock.json`. O primeiro declara as
 dependências; o segundo fixa as versões resolvidas para que instalações
 diferentes sejam reproduzíveis.
+
+Para instalar o Chromium usado nos testes de integração:
+
+```powershell
+npx playwright install chromium
+```
 
 ### 5.4 Parar o servidor
 
@@ -627,17 +642,43 @@ podem produzir saltos e resultados imprevisíveis.
 - um novo comando interrompe o anterior sem deixar membros deformados;
 - o build termina sem erros.
 
-### 15.3 Build obrigatório
+### 15.3 Testes automatizados
+
+Os testes são separados por responsabilidade:
+
+- `npm test` executa regras puras com Vitest;
+- `npm run test:browser` gera o build e abre o laboratório com Playwright;
+- `npm run test:browser:headed` mostra o Chromium durante a execução;
+- `npm run test:all` executa as duas camadas.
+
+O Playwright roda três cenários em dois perfis, totalizando seis casos:
+
+1. inicialização sem exceção e atualização da telemetria;
+2. registro, prioridade, interrupção e parada de comandos;
+3. funcionamento dos comandos no modo reduzido;
+4. repetição dos mesmos cenários em desktop e mobile.
+
+O listener `pageerror` transforma exceções não tratadas do navegador em falha
+de teste. Foi essa camada que faltava quando o erro `Illegal invocation`
+interrompeu a inicialização mesmo com TypeScript e Vitest aprovados.
+
+O workflow `.github/workflows/browser-tests.yml` instala o Chromium e executa
+as duas suítes no GitHub Actions. Assim, a validação não depende apenas do
+navegador instalado na máquina de desenvolvimento.
+
+### 15.4 Build obrigatório
 
 Antes de publicar:
 
 ```powershell
 npm run build
 npm test
+npm run test:browser
 ```
 
 O primeiro comando executa o compilador TypeScript e o build do Vite. O
-segundo testa o orquestrador e os cálculos de desempenho.
+segundo testa o orquestrador e os cálculos de desempenho. O terceiro valida a
+aplicação completa no Chromium.
 
 ## 16. Problemas conhecidos e diagnóstico
 
@@ -681,6 +722,21 @@ npm install
 Verifique o Console do navegador. Um 404 isolado de favicon não é a causa.
 Erros em `motion-engine.ts`, importação do GSAP ou seletores nulos são
 relevantes.
+
+### 16.5 `Illegal invocation` no monitor de desempenho
+
+Métodos nativos como `requestAnimationFrame` podem exigir `window` como
+contexto. Armazenar o método e chamá-lo isoladamente interrompe o módulo antes
+do registro dos botões.
+
+O monitor usa wrappers:
+
+```typescript
+callback => window.requestAnimationFrame(callback)
+```
+
+O teste unitário protege o vínculo e o Playwright confirma que a aplicação
+inteira inicia sem exceções.
 
 ## 17. Acessibilidade
 
@@ -757,6 +813,7 @@ main
                         └── feature/object-interaction-engine
                             └── feature/state-orchestrator
                                 └── feature/performance-accessibility
+                                    └── feature/robustness-integration-tests
 ```
 
 Não é necessário mesclar uma branch anterior para testar a seguinte: cada
@@ -810,9 +867,11 @@ branch nova foi criada a partir da anterior.
 - métricas para 60 e 120 Hz;
 - testes dos cálculos.
 
-### Protótipo 09 — Robustez — próximo
+### Protótipo 09 — Robustez — em andamento
 
-- testes de integração DOM/GSAP;
+- testes reais de integração DOM/GSAP no Chromium — etapa 1 concluída;
+- validação desktop e mobile — etapa 1 concluída;
+- detecção de exceções de inicialização — etapa 1 concluída;
 - múltiplas instâncias do Byte;
 - sessões longas e vazamento de memória;
 - criação e destruição segura do motor;
