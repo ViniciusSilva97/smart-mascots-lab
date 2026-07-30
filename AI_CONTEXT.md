@@ -43,7 +43,7 @@ feature/jump-engine
 Commit de implementação:
 
 ```text
-A REGISTRAR APÓS A PUBLICAÇÃO
+e13a7d1296ac1ed4904e397aebb1517185743775
 feat: add jump and landing states
 ```
 
@@ -57,7 +57,7 @@ feat: add jump and landing states
 | Correção GSAP | `feature/gsap-motion-engine` | `b72d251` |
 | Protótipo 03 | `feature/locomotion-engine` | `3cb0875` |
 | Documentação | `docs/project-documentation` | `9af8344` |
-| Protótipo 04 | `feature/jump-engine` | A registrar |
+| Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -341,7 +341,7 @@ Próximo passo:
 ### 2026-07-29 — Protótipo 04
 
 - **Branch:** `feature/jump-engine`
-- **Commit:** a registrar após a publicação.
+- **Commit:** `e13a7d1296ac1ed4904e397aebb1517185743775`.
 - **Objetivo:** criar salto parado, salto longo e aterrissagem convincente.
 - **Mudanças:** sete estados verticais, arco horizontal, controles de teclado
   e sincronização da posição renderizada antes de interrupções.
