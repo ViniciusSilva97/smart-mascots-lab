@@ -43,7 +43,7 @@ feature/object-interaction-engine
 Commit de implementação:
 
 ```text
-A confirmar após a publicação.
+6fb2e8fea9dd1662cd68d42872d84a099fb214ce
 feat: add object interaction engine
 ```
 
@@ -59,7 +59,7 @@ feat: add object interaction engine
 | Documentação | `docs/project-documentation` | `9af8344` |
 | Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
 | Protótipo 05 | `feature/attention-engine` | `efa16b2` |
-| Protótipo 06 | `feature/object-interaction-engine` | a confirmar |
+| Protótipo 06 | `feature/object-interaction-engine` | `6fb2e8f` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -431,7 +431,7 @@ Próximo passo:
 ### 2026-07-29 — Protótipo 06
 
 - **Branch:** `feature/object-interaction-engine`
-- **Commit:** a confirmar após a publicação.
+- **Commit:** `6fb2e8fea9dd1662cd68d42872d84a099fb214ce`.
 - **Objetivo:** permitir que o Byte interaja fisicamente com itens do palco.
 - **Mudanças:** aproximação, alinhamento, alcance, captura, transporte,
   apresentação, devolução, restauração após interrupção e reação ao servidor
