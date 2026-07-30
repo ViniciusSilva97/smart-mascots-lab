@@ -7,9 +7,13 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run src",
+    "test:browser": "npm run build && playwright test",
+    "test:browser:headed": "npm run build && playwright test --headed",
+    "test:all": "npm test && npm run test:browser"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"
