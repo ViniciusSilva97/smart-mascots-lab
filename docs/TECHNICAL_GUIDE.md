@@ -112,10 +112,10 @@ Cada comando deve exibir uma versão.
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/jump-engine
+git switch feature/attention-engine
 ```
 
-O `git switch` escolhe a branch do Protótipo 04. Ela já contém os protótipos
+O `git switch` escolhe a branch do Protótipo 05. Ela já contém os protótipos
 anteriores e a documentação em seu histórico.
 
 ### 5.3 Instalar e iniciar
@@ -256,6 +256,19 @@ type JumpState =
   | 'recovering'
 ```
 
+Expressões e atenção são representadas separadamente:
+
+```typescript
+type Expression =
+  | 'friendly'
+  | 'curious'
+  | 'surprised'
+  | 'confirming'
+  | 'focused'
+
+type AttentionState = 'relaxed' | 'tracking' | Expression
+```
+
 ### 9.3 Pose
 
 É o conjunto instantâneo de transformações: rotação dos braços, altura do
@@ -312,6 +325,25 @@ stateDiagram-v2
 O salto usa antecipação antes do impulso, alongamento na subida, breve
 desaceleração no ápice, aceleração na queda e compressão durante o contato.
 O salto longo coordena o arco vertical com deslocamento horizontal.
+
+### 10.6 Atenção e personalidade
+
+O motor diferencia ação corporal de atenção. Quando o Byte está em `idle`,
+`lookAt` pode orientar olhos, cabeça e antena para o cursor sem substituir a
+timeline principal.
+
+Durante caminhada, salto ou expressão, o rastreamento é suspenso. Essa regra
+evita que duas fontes tentem controlar as mesmas propriedades.
+
+As expressões usam timelines curtas:
+
+- `friendly`: sorriso, olhos suaves e inclinação acolhedora;
+- `curious`: cabeça inclinada, olhar lateral e braço próximo ao rosto;
+- `surprised`: olhos ampliados, corpo elevado e antena reagindo;
+- `confirming`: acenos de cabeça, piscada e sorriso;
+- `focused`: olhar estreito e orientação para um detalhe.
+
+Após uma expressão, o motor volta ao `idle`, preservando posição e direção.
 
 ## 11. Construção da caminhada
 
@@ -427,6 +459,10 @@ podem produzir saltos e resultados imprevisíveis.
 11. Pressione `↑` para saltar.
 12. Pressione `Shift + ↑` para executar um salto longo.
 13. Inicie uma caminhada e interrompa com um salto.
+14. Mova o cursor lentamente ao redor do Byte.
+15. Teste cada botão de personalidade.
+16. Clique nos alvos CPU, SSD e GPU.
+17. Confirme que o rastreamento não interfere em caminhada ou salto.
 
 ### 15.2 Critérios de aprovação
 
@@ -438,6 +474,9 @@ podem produzir saltos e resultados imprevisíveis.
 - o retorno preserva o destino;
 - o salto iniciado durante caminhada parte da posição renderizada;
 - a aterrissagem passa por contato e recuperação;
+- olhos, cabeça e antena acompanham o cursor em repouso;
+- expressões retornam suavemente ao estado atento;
+- ações corporais bloqueiam temporariamente o rastreamento;
 - um novo comando interrompe o anterior sem deixar membros deformados;
 - o build termina sem erros.
 
@@ -538,6 +577,7 @@ main
         └── feature/locomotion-engine
             └── docs/project-documentation
                 └── feature/jump-engine
+                    └── feature/attention-engine
 ```
 
 Não é necessário mesclar uma branch anterior para testar a seguinte: cada
@@ -558,7 +598,7 @@ branch nova foi criada a partir da anterior.
 - salto longo;
 - sincronização da posição durante interrupções.
 
-### Protótipo 05 — Expressões — próximo
+### Protótipo 05 — Expressões — concluído
 
 - direção do olhar;
 - piscadas naturais;
@@ -567,7 +607,7 @@ branch nova foi criada a partir da anterior.
 - confirmação;
 - sincronização de cabeça, antena e fala.
 
-### Protótipo 06 — Objetos
+### Protótipo 06 — Objetos — próximo
 
 - aproximar-se;
 - pegar;

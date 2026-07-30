@@ -1,6 +1,8 @@
 import './style.css'
 import {
+  type AttentionState,
   ByteMotionEngine,
+  type Expression,
   type JumpState,
   type LocomotionState,
   type Motion,
@@ -17,6 +19,14 @@ const motions: Array<{ id: Motion; label: string; icon: string }> = [
   { id: 'celebrate', label: 'Comemorar', icon: '★' },
 ]
 
+const expressions: Array<{ id: Expression; label: string }> = [
+  { id: 'friendly', label: 'Simpático' },
+  { id: 'curious', label: 'Curioso' },
+  { id: 'surprised', label: 'Surpreso' },
+  { id: 'confirming', label: 'Confirmar' },
+  { id: 'focused', label: 'Focado' },
+]
+
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <header class="topbar">
     <a class="brand" href="#" aria-label="Smart Mascots Lab">
@@ -31,7 +41,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 04 • SALTO</p>
+      <p class="eyebrow">// PROTÓTIPO 05 • ATENÇÃO</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -52,12 +62,21 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
             </button>`).join('')}
         </div>
         <p class="keyboard-tip"><kbd>1</kbd>—<kbd>5</kbd> Atalhos de animação</p>
+        <div class="separator"></div>
+        <span class="panel-label">PERSONALIDADE</span>
+        <div class="expression-list">
+          ${expressions.map(({ id, label }) => `
+            <button class="expression-button" data-expression="${id}">
+              <span></span>${label}
+            </button>`).join('')}
+        </div>
       </aside>
 
       <div class="stage-column">
         <div class="stage-toolbar">
           <span><i></i> PREVIEW EM TEMPO REAL</span>
           <div class="transport">
+            <button id="tracking" type="button" aria-pressed="true">◎ &nbsp;ATENÇÃO ON</button>
             <button id="demo" type="button">▶ &nbsp;DEMO</button>
             <button id="restart" type="button" aria-label="Reiniciar">↺</button>
             <button id="pause" type="button" aria-pressed="false">Ⅱ &nbsp;PAUSAR</button>
@@ -66,6 +85,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <div class="stage" id="stage">
           <div class="grid"></div>
           <div class="target-marker" id="target-marker" aria-hidden="true"></div>
+          <button class="detail-target detail-one" data-direction="-1" data-label="CPU">CPU<small>DETALHE</small></button>
+          <button class="detail-target detail-two" data-direction="1" data-label="SSD">SSD<small>DETALHE</small></button>
+          <button class="detail-target detail-three" data-direction="1" data-label="GPU">GPU<small>DETALHE</small></button>
           <div class="speech" id="speech">Olá! Eu sou o Byte.</div>
           <div class="byte-wrap" id="byte-wrap">
             <div class="byte" id="byte" data-motion="idle" role="img" aria-label="Byte, mascote pixelado provisório">
@@ -153,6 +175,16 @@ const jumpLabels: Record<JumpState, string> = {
   recovering: 'RECUPERANDO',
 }
 
+const attentionLabels: Record<AttentionState, string> = {
+  relaxed: 'ATENTO',
+  tracking: 'ACOMPANHANDO',
+  friendly: 'SIMPÁTICO',
+  curious: 'CURIOSO',
+  surprised: 'SURPRESO',
+  confirming: 'CONFIRMANDO',
+  focused: 'FOCADO',
+}
+
 const speechByMotion: Record<Motion, string> = {
   idle: 'Olá! Eu sou o Byte.',
   walk: 'Vamos explorar a loja?',
@@ -177,6 +209,17 @@ const engine = new ByteMotionEngine(byte, {
   onJumpStateChange(jumpState) {
     if (jumpState !== 'grounded') state.textContent = jumpLabels[jumpState]
   },
+  onAttentionStateChange(attentionState) {
+    state.textContent = attentionLabels[attentionState]
+  },
+  onExpressionChange(expression) {
+    document.querySelectorAll('.expression-button').forEach(button => {
+      button.classList.toggle(
+        'active',
+        (button as HTMLElement).dataset.expression === expression,
+      )
+    })
+  },
   onProgress(value) {
     const percent = Math.round(value * 100)
     progress.value = String(Math.round(value * 1000))
@@ -198,6 +241,20 @@ document.querySelectorAll<HTMLButtonElement>('.motion-button').forEach(button =>
     if (motion === 'walk') engine.walk(1)
     else if (motion === 'jump') engine.jump()
     else engine.play(motion)
+  })
+})
+
+document.querySelectorAll<HTMLButtonElement>('.expression-button').forEach(button => {
+  button.addEventListener('click', () => {
+    const expression = button.dataset.expression as Expression
+    speech.textContent = {
+      friendly: 'Olá! Posso ajudar?',
+      curious: 'Hmm... quero entender melhor.',
+      surprised: 'Uau! Olha este detalhe!',
+      confirming: 'Certo! Entendi perfeitamente.',
+      focused: 'Analisando cada detalhe...',
+    }[expression]
+    engine.express(expression)
   })
 })
 
@@ -236,6 +293,31 @@ document.querySelector<HTMLButtonElement>('#walk-right')!.addEventListener('clic
 document.querySelector<HTMLButtonElement>('#run')!.addEventListener('click', () => engine.walk(1, true))
 document.querySelector<HTMLButtonElement>('#jump')!.addEventListener('click', () => engine.jump())
 document.querySelector<HTMLButtonElement>('#long-jump')!.addEventListener('click', () => engine.jump(true))
+
+const trackingButton = document.querySelector<HTMLButtonElement>('#tracking')!
+trackingButton.addEventListener('click', () => {
+  const enabled = trackingButton.getAttribute('aria-pressed') !== 'true'
+  trackingButton.setAttribute('aria-pressed', String(enabled))
+  trackingButton.innerHTML = enabled ? '◎ &nbsp;ATENÇÃO ON' : '○ &nbsp;ATENÇÃO OFF'
+  engine.setTracking(enabled)
+})
+
+document.querySelectorAll<HTMLButtonElement>('.detail-target').forEach(target => {
+  target.addEventListener('click', event => {
+    event.stopPropagation()
+    const direction = Number(target.dataset.direction) as -1 | 1
+    speech.textContent = `Analisando ${target.dataset.label} com atenção.`
+    engine.express('focused', direction)
+  })
+})
+
+stage.addEventListener('pointermove', event => {
+  const rect = stage.getBoundingClientRect()
+  const normalizedX = ((event.clientX - rect.left) / rect.width) * 2 - 1
+  const normalizedY = ((event.clientY - rect.top) / rect.height) * 2 - 1
+  engine.lookAt(normalizedX, normalizedY)
+})
+stage.addEventListener('pointerleave', () => engine.releaseAttention())
 
 stage.addEventListener('click', event => {
   const rect = stage.getBoundingClientRect()

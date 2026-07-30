@@ -32,19 +32,19 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 04 — Salto e aterrissagem**
+**Protótipo 05 — Expressões e atenção**
 
 Branch canônica:
 
 ```text
-feature/jump-engine
+feature/attention-engine
 ```
 
 Commit de implementação:
 
 ```text
-e13a7d1296ac1ed4904e397aebb1517185743775
-feat: add jump and landing states
+A REGISTRAR APÓS A PUBLICAÇÃO
+feat: add attention and expression engine
 ```
 
 ### 3.2 Histórico
@@ -58,6 +58,7 @@ feat: add jump and landing states
 | Protótipo 03 | `feature/locomotion-engine` | `3cb0875` |
 | Documentação | `docs/project-documentation` | `9af8344` |
 | Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
+| Protótipo 05 | `feature/attention-engine` | A registrar |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -177,6 +178,19 @@ type JumpState =
   | 'recovering'
 ```
 
+### Expressões e atenção
+
+```typescript
+type Expression =
+  | 'friendly'
+  | 'curious'
+  | 'surprised'
+  | 'confirming'
+  | 'focused'
+
+type AttentionState = 'relaxed' | 'tracking' | Expression
+```
+
 ## 9. API pública atual do motor
 
 | Método | Uso |
@@ -185,6 +199,10 @@ type JumpState =
 | `walk(direction, running)` | Caminha uma distância padrão |
 | `walkTo(targetX, running)` | Caminha até um destino |
 | `jump(longJump)` | Executa salto parado ou salto longo |
+| `lookAt(x, y)` | Orienta olhos, cabeça e antena |
+| `releaseAttention()` | Retorna a atenção ao centro |
+| `setTracking(enabled)` | Ativa ou desativa rastreamento |
+| `express(expression, direction)` | Executa reação emocional |
 | `playDemo()` | Executa sequência demonstrativa |
 | `togglePause()` | Pausa ou continua |
 | `restart()` | Reinicia a timeline |
@@ -199,6 +217,9 @@ type JumpState =
 - clique e `Shift + clique`;
 - setas e `Shift + setas`;
 - seta para cima e `Shift + seta para cima`;
+- cursor para rastreamento de atenção;
+- botões de personalidade;
+- alvos CPU, SSD e GPU;
 - espaço para pausa;
 - controle de progresso;
 - velocidade e escala;
@@ -229,6 +250,10 @@ Teste manual:
 11. salto parado;
 12. salto longo;
 13. interrupção da caminhada por salto sem retorno de posição.
+14. rastreamento suave do cursor;
+15. cinco expressões;
+16. bloqueio do rastreamento durante ações;
+17. foco nos três alvos de detalhe.
 
 ## 12. Problemas e limitações conhecidas
 
@@ -242,6 +267,8 @@ Teste manual:
   clique permitem ambos os lados;
 - a demo não possui uma fila de estados generalizada;
 - salto e caminhada ainda não possuem física; são timelines determinísticas;
+- alvos CPU, SSD e GPU são marcadores provisórios, não produtos reais;
+- expressões ainda usam a face CSS simplificada;
 - assets remanescentes do template Vite ainda podem ser limpos;
 - a integração Tray não foi iniciada.
 
@@ -257,29 +284,28 @@ Teste manual:
 
 ## 14. Próximo passo recomendado
 
-**Protótipo 05 — Expressões e atenção**
+**Protótipo 06 — Interação com objetos**
 
 Escopo recomendado:
 
-- direção do olhar;
-- piscadas com intervalos menos previsíveis;
-- inclinação contextual da cabeça;
-- reações da antena;
-- surpresa, curiosidade e confirmação;
-- foco em produtos e elementos da interface;
-- transições entre expressão e locomoção.
+- aproximar-se de um objeto;
+- alinhar corpo e direção;
+- estender o braço;
+- pegar, carregar e soltar;
+- apontar para um produto;
+- reagir quando o objeto está fora de alcance;
+- preservar atenção e personalidade durante a interação.
 
 Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 05: olhos, cabeça, antena e expressões.
-2. Protótipo 06: interação com objetos.
-3. Protótipo 07: máquina de estados, prioridade e fila.
-4. Testes automatizados e métricas reais.
-5. Spritesheet oficial.
-6. Avaliar PixiJS.
-7. Integração experimental com cópia do tema Tray.
+1. Protótipo 06: interação com objetos.
+2. Protótipo 07: máquina de estados, prioridade e fila.
+3. Testes automatizados e métricas reais.
+4. Spritesheet oficial.
+5. Avaliar PixiJS.
+6. Integração experimental com cópia do tema Tray.
 
 ## 16. Regras para futuras IAs
 
@@ -348,3 +374,14 @@ Próximo passo:
 - **Validação:** TypeScript e build Vite aprovados.
 - **Limitação:** movimento determinístico, sem física real.
 - **Próximo passo:** expressões, olhar, cabeça e antena.
+
+### 2026-07-29 — Protótipo 05
+
+- **Branch:** `feature/attention-engine`
+- **Commit:** a registrar após a publicação.
+- **Objetivo:** tornar o Byte simpático, atento e responsivo aos detalhes.
+- **Mudanças:** rastreamento do cursor, piscadas variáveis, cinco expressões,
+  bloqueio durante ações e alvos contextuais CPU, SSD e GPU.
+- **Validação:** TypeScript e build Vite aprovados.
+- **Limitação:** rosto e alvos ainda são provisórios.
+- **Próximo passo:** interação física simulada com objetos.

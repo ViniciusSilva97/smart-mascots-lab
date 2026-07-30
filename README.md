@@ -8,7 +8,7 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 04 — Salto e aterrissagem**
+**Protótipo 05 — Expressões e atenção**
 
 - animações coordenadas com GSAP;
 - estados de locomoção: `idle`, `preparing`, `walking` e `braking`;
@@ -17,6 +17,10 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 - salto parado e salto longo;
 - fases de subida, ápice, queda, contato e recuperação;
 - salto seguro durante outro movimento;
+- acompanhamento do cursor com olhos, cabeça e antena;
+- expressões simpática, curiosa, surpresa, confirmadora e focada;
+- alvos de detalhe para testar atenção contextual;
+- piscadas com intervalo variável;
 - destino escolhido por clique;
 - limites responsivos do palco;
 - movimentos complementares: apontar, pensar e comemorar;
@@ -33,7 +37,7 @@ Pré-requisitos:
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/jump-engine
+git switch feature/attention-engine
 npm install
 npm run dev
 ```
@@ -58,6 +62,9 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `Shift + ←` ou `Shift + →` | Correm |
 | `↑` | Salta no lugar |
 | `Shift + ↑` | Executa salto longo |
+| Movimento do cursor | Direciona olhos, cabeça e antena |
+| Botões de personalidade | Executam expressões |
+| Clique em CPU, SSD ou GPU | Foca no detalhe escolhido |
 | Clique no palco | Caminha até o destino |
 | `Shift + clique` | Corre até o destino |
 | `Espaço` | Pausa ou continua a timeline |
@@ -77,6 +84,7 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `feature/locomotion-engine` | Protótipo 03: locomoção por destino |
 | `docs/project-documentation` | Guia técnico e contexto para IA |
 | `feature/jump-engine` | Protótipo 04: salto e aterrissagem |
+| `feature/attention-engine` | Protótipo 05: expressões e atenção |
 
 As branches anteriores são preservadas como marcos de comparação. Não faça
 merge na `main` enquanto o laboratório ainda estiver em experimentação.

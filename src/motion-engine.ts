@@ -10,11 +10,15 @@ export type JumpState =
   | 'falling'
   | 'landing'
   | 'recovering'
+export type Expression = 'friendly' | 'curious' | 'surprised' | 'confirming' | 'focused'
+export type AttentionState = 'relaxed' | 'tracking' | Expression
 
 type EngineCallbacks = {
   onMotionChange: (motion: Motion) => void
   onLocomotionStateChange: (state: LocomotionState) => void
   onJumpStateChange: (state: JumpState) => void
+  onAttentionStateChange: (state: AttentionState) => void
+  onExpressionChange: (expression: Expression | null) => void
   onProgress: (progress: number) => void
   onPlayStateChange: (paused: boolean) => void
 }
@@ -34,6 +38,8 @@ export class ByteMotionEngine {
   private positionX = 0
   private direction: -1 | 1 = 1
   private maxPosition = 340
+  private activeMotion: Motion | 'expression' = 'idle'
+  private trackingEnabled = true
 
   constructor(root: HTMLElement, callbacks: EngineCallbacks) {
     this.byte = root
@@ -61,9 +67,12 @@ export class ByteMotionEngine {
       this.jump()
       return
     }
+    this.activeMotion = motion
     this.callbacks.onMotionChange(motion)
+    this.callbacks.onExpressionChange(null)
     this.callbacks.onLocomotionStateChange('idle')
     this.callbacks.onJumpStateChange('grounded')
+    this.callbacks.onAttentionStateChange('relaxed')
     this.replaceTimeline(() => this.createMotion(motion))
   }
 
@@ -79,7 +88,9 @@ export class ByteMotionEngine {
       return
     }
 
+    this.activeMotion = 'walk'
     this.callbacks.onMotionChange('walk')
+    this.callbacks.onExpressionChange(null)
     this.callbacks.onJumpStateChange('grounded')
     this.replaceTimeline(() => this.createLocomotion(this.positionX, clampedTarget, running, true))
   }
@@ -92,13 +103,17 @@ export class ByteMotionEngine {
       this.positionX + distance,
     )
 
+    this.activeMotion = 'jump'
     this.callbacks.onMotionChange('jump')
+    this.callbacks.onExpressionChange(null)
     this.callbacks.onLocomotionStateChange('idle')
     this.replaceTimeline(() => this.createJump(this.positionX, targetX, longJump, true))
   }
 
   playDemo() {
+    this.activeMotion = 'walk'
     this.callbacks.onMotionChange('walk')
+    this.callbacks.onExpressionChange(null)
     this.replaceTimeline(() => {
       const demo = gsap.timeline()
       return demo
@@ -148,6 +163,61 @@ export class ByteMotionEngine {
     gsap.set(this.wrap, { x: this.positionX })
   }
 
+  setTracking(enabled: boolean) {
+    this.trackingEnabled = enabled
+    if (!enabled) this.releaseAttention()
+  }
+
+  lookAt(normalizedX: number, normalizedY: number) {
+    if (!this.trackingEnabled || this.activeMotion !== 'idle') return
+
+    const x = gsap.utils.clamp(-1, 1, normalizedX)
+    const y = gsap.utils.clamp(-1, 1, normalizedY)
+    this.callbacks.onAttentionStateChange('tracking')
+
+    gsap.to(this.eyes, {
+      x: x * 4,
+      y: y * 2.5,
+      duration: 0.16,
+      overwrite: 'auto',
+      ease: 'power2.out',
+    })
+    gsap.to(this.head, {
+      rotation: x * 4,
+      x: x * 2,
+      y: y * 1.5,
+      duration: 0.24,
+      overwrite: 'auto',
+      ease: 'power2.out',
+    })
+    gsap.to(this.antenna, {
+      rotation: x * 7,
+      duration: 0.28,
+      overwrite: 'auto',
+      ease: 'back.out(1.5)',
+    })
+  }
+
+  releaseAttention() {
+    if (this.activeMotion !== 'idle') return
+    this.callbacks.onAttentionStateChange('relaxed')
+    gsap.to([this.eyes, this.head, this.antenna], {
+      x: 0,
+      y: 0,
+      rotation: 0,
+      duration: 0.3,
+      overwrite: 'auto',
+      ease: 'power2.out',
+    })
+  }
+
+  express(expression: Expression, focusDirection: -1 | 1 = this.direction) {
+    this.activeMotion = 'expression'
+    this.callbacks.onExpressionChange(expression)
+    this.callbacks.onAttentionStateChange(expression)
+    this.replaceTimeline(() => this.createExpression(expression, focusDirection))
+  }
+
   private replaceTimeline(createTimeline: () => gsap.core.Timeline) {
     this.syncRenderedPosition()
     this.timeline.kill()
@@ -186,13 +256,82 @@ export class ByteMotionEngine {
   }
 
   private createIdle() {
-    const timeline = gsap.timeline({ repeat: -1, repeatDelay: 0.15 })
+    const timeline = gsap.timeline({ repeat: -1, repeatRefresh: true })
     timeline
       .to(this.byte, { y: -3, duration: 0.65, ease: 'sine.inOut' })
       .to(this.byte, { y: 0, duration: 0.65, ease: 'sine.inOut' })
-      .to(this.eyes, { scaleY: 0.08, duration: 0.06, ease: 'none' }, 0.9)
+      .to({}, { duration: () => gsap.utils.random(0.35, 1.45) })
+      .to(this.eyes, { scaleY: 0.08, duration: 0.06, ease: 'none' })
       .to(this.eyes, { scaleY: 1, duration: 0.08, ease: 'none' })
-      .to(this.antenna, { rotation: 5, duration: 0.18, yoyo: true, repeat: 1 }, 0.15)
+      .to(this.smile, { scaleX: 1.18, duration: 0.2, yoyo: true, repeat: 1 }, '<')
+      .to(this.antenna, {
+        rotation: () => gsap.utils.random(-6, 6),
+        duration: 0.18,
+        yoyo: true,
+        repeat: 1,
+      }, 0.15)
+    return timeline
+  }
+
+  private createExpression(expression: Expression, focusDirection: -1 | 1) {
+    const timeline = gsap.timeline()
+
+    switch (expression) {
+      case 'curious':
+        timeline
+          .to(this.head, { rotation: -9, x: -3, duration: 0.28, ease: 'back.out(1.6)' })
+          .to(this.eyes, { x: -4, y: -2, duration: 0.2 }, '<')
+          .to(this.antenna, { rotation: -14, duration: 0.25, ease: 'back.out(2)' }, '<')
+          .to(this.arms[1], { rotation: 132, x: -5, y: -8, duration: 0.35, ease: 'back.out(1.5)' }, '<')
+          .to({}, { duration: 0.75 })
+        break
+      case 'surprised':
+        timeline
+          .to(this.byte, { y: -13, scaleY: 1.06, duration: 0.18, ease: 'back.out(2.4)' })
+          .to(this.eyes, { scaleX: 1.45, scaleY: 1.45, duration: 0.16 }, '<')
+          .to(this.smile, { scaleX: 0.5, scaleY: 2.1, y: -1, duration: 0.16 }, '<')
+          .to(this.antenna, { y: -7, duration: 0.16, ease: 'back.out(2)' }, '<')
+          .to({}, { duration: 0.55 })
+          .to(this.byte, { y: 0, scaleY: 1, duration: 0.3, ease: 'bounce.out' })
+        break
+      case 'confirming':
+        timeline
+          .to(this.head, { y: 5, rotation: 3, duration: 0.14, yoyo: true, repeat: 3, ease: 'sine.inOut' })
+          .to(this.eyes, { scaleY: 0.18, duration: 0.08, yoyo: true, repeat: 1 }, 0.18)
+          .to(this.smile, { scaleX: 1.5, duration: 0.2, yoyo: true, repeat: 1 }, 0.15)
+          .to(this.antenna, { y: -5, duration: 0.15, yoyo: true, repeat: 3 }, 0)
+          .to({}, { duration: 0.35 })
+        break
+      case 'focused':
+        timeline
+          .to(this.head, { rotation: 6 * focusDirection, x: 3 * focusDirection, duration: 0.25, ease: 'power2.out' })
+          .to(this.eyes, { x: 4 * focusDirection, scaleY: 0.7, duration: 0.2 }, '<')
+          .to(this.antenna, { rotation: 10 * focusDirection, duration: 0.24 }, '<')
+          .to(this.byte, { rotation: 2 * focusDirection, duration: 0.24 }, '<')
+          .to({}, { duration: 0.9 })
+        break
+      default:
+        timeline
+          .to(this.head, { rotation: 6, y: 1, duration: 0.25, ease: 'back.out(1.5)' })
+          .to(this.eyes, { scaleY: 0.62, duration: 0.18 }, '<')
+          .to(this.smile, { scaleX: 1.65, duration: 0.22, ease: 'back.out(2)' }, '<')
+          .to(this.antenna, { rotation: 8, duration: 0.16, yoyo: true, repeat: 3 }, '<')
+          .to(this.byte, { rotation: -2, duration: 0.3 }, '<')
+          .to({}, { duration: 0.7 })
+    }
+
+    timeline
+      .to([this.byte, this.head, this.eyes, this.smile, this.antenna, this.arms], {
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 0.32,
+        ease: 'power2.inOut',
+      })
+      .call(() => this.play('idle'))
+
     return timeline
   }
 
