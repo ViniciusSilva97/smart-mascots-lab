@@ -32,19 +32,19 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 06 — Interação com objetos**
+**Protótipo 07 — Orquestração de estados**
 
 Branch canônica:
 
 ```text
-feature/object-interaction-engine
+feature/state-orchestrator
 ```
 
 Commit de implementação:
 
 ```text
-6fb2e8fea9dd1662cd68d42872d84a099fb214ce
-feat: add object interaction engine
+A confirmar após a publicação.
+feat: add state orchestrator
 ```
 
 ### 3.2 Histórico
@@ -60,6 +60,7 @@ feat: add object interaction engine
 | Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
 | Protótipo 05 | `feature/attention-engine` | `efa16b2` |
 | Protótipo 06 | `feature/object-interaction-engine` | `6fb2e8f` |
+| Protótipo 07 | `feature/state-orchestrator` | a confirmar |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -69,6 +70,7 @@ antes de testar o 02 ou 03.
 - Vite 8;
 - TypeScript 6;
 - GSAP 3;
+- Vitest 4;
 - HTML/CSS sem framework de interface;
 - npm e `package-lock.json`.
 
@@ -80,6 +82,8 @@ Não adicionar React, Vue, Phaser, PixiJS ou Rive sem uma decisão explícita.
 |---|---|
 | `src/main.ts` | interface, eventos, controles e adaptação do palco |
 | `src/motion-engine.ts` | timelines, estado e posição do Byte |
+| `src/state-orchestrator.ts` | prioridade, fila e política de interrupção |
+| `src/state-orchestrator.test.ts` | testes unitários da orquestração |
 | `src/style.css` | identidade, layout, Byte provisório e responsividade |
 | `index.html` | shell de entrada |
 | `docs/TECHNICAL_GUIDE.md` | explicação humana completa |
@@ -129,6 +133,25 @@ transformação e limpa `data-held`.
 Não remova essa restauração. Ela garante que salto, caminhada, expressão ou
 uma segunda interação possam interromper o transporte sem deixar o produto
 flutuando ou preso ao Byte.
+
+### 6.7 Orquestrador puro
+
+`CommandOrchestrator` não deve importar GSAP nem acessar o DOM. Ele decide
+quando executar callbacks recebidos em `MascotCommand`.
+
+Política canônica:
+
+- reset (`100`) sempre interrompe e limpa;
+- interação e demo (`40`) são atômicas;
+- salto (`30`) interrompe locomoção;
+- locomoção (`20`) interrompe gesto ou expressão;
+- gesto e expressão (`10`) aguardam ações mais importantes;
+- fila máxima de quatro itens;
+- comandos pendentes da mesma categoria são substituídos pelo mais recente;
+- prioridade maior sai primeiro; empates preservam a ordem de chegada.
+
+Não voltar a chamar métodos de movimento diretamente nos eventos de
+`main.ts`. Novas ações corporais devem passar pelo orquestrador.
 
 ## 7. Erro histórico que não pode voltar
 
@@ -224,6 +247,26 @@ approaching → aligning → reaching → grabbing → carrying
 → presenting → releasing → idle
 ```
 
+### Orquestração
+
+```typescript
+type CommandKind =
+  | 'reset'
+  | 'gesture'
+  | 'expression'
+  | 'locomotion'
+  | 'jump'
+  | 'interaction'
+  | 'demo'
+```
+
+Decisões observáveis:
+
+```text
+started | interrupted | queued | replaced-in-queue
+| queue-full | reset | completed
+```
+
 ## 9. API pública atual do motor
 
 | Método | Uso |
@@ -245,6 +288,18 @@ approaching → aligning → reaching → grabbing → carrying
 | `setSpeed(speed)` | Ajusta `timeScale` |
 | `setBounds(maxPosition)` | Define limites do palco |
 
+### 9.1 API do orquestrador
+
+| Método | Uso |
+|---|---|
+| `dispatch(command)` | Decide e inicia, interrompe ou enfileira |
+| `completeActive()` | Finaliza a ação atual e drena a fila |
+| `clearQueue()` | Remove itens pendentes |
+| `getSnapshot()` | Expõe ação ativa, fila e última decisão |
+
+O motor chama `onActionComplete` ao terminar caminhada, salto, expressão,
+interação ou demo. `main.ts` encaminha o sinal para `completeActive`.
+
 ## 10. Entradas implementadas
 
 - botões de movimentos;
@@ -259,6 +314,8 @@ approaching → aligning → reaching → grabbing → carrying
 - espaço para pausa;
 - controle de progresso;
 - velocidade e escala;
+- painel de ação ativa, decisão e fila;
+- botões `Limpar fila` e `Parar tudo`;
 - redimensionamento da janela.
 
 ## 11. Validação obrigatória
@@ -268,6 +325,7 @@ Antes de publicar:
 ```powershell
 npm install
 npm run build
+npm test
 git diff --check
 ```
 
@@ -295,18 +353,25 @@ Teste manual:
 20. devolução do produto após conclusão;
 21. devolução do produto ao interromper com outro comando;
 22. reação ao servidor fora de alcance.
+23. salto interrompe caminhada;
+24. expressão aguarda caminhada;
+25. interação protege a sequência e enfileira novos comandos;
+26. maior prioridade sai primeiro;
+27. comando repetido pendente é substituído;
+28. limpar fila preserva ação ativa;
+29. parar tudo limpa ação e fila.
 
 ## 12. Problemas e limitações conhecidas
 
 - `/favicon.ico` pode retornar 404; é inofensivo.
 - `prefers-reduced-motion` ainda não controla integralmente timelines GSAP.
-- não existem testes automatizados;
+- testes automatizados cobrem o orquestrador, mas não renderização GSAP/DOM;
 - FPS exibido é estático, não medido;
 - o Byte definitivo e spritesheets ainda não existem neste projeto;
 - o giro por `scaleX` também espelha detalhes internos do protótipo;
 - corrida possui botão direto prioritariamente para a direita; teclado e
   clique permitem ambos os lados;
-- a demo não possui uma fila de estados generalizada;
+- demo é atômica e compartilha a fila geral de comandos;
 - salto e caminhada ainda não possuem física; são timelines determinísticas;
 - CPU, SSD, GPU e servidor são objetos CSS provisórios, não produtos reais;
 - expressões ainda usam a face CSS simplificada;
@@ -328,23 +393,23 @@ Teste manual:
 
 ## 14. Próximo passo recomendado
 
-**Protótipo 07 — Máquina de estados, prioridade e fila**
+**Protótipo 08 — Desempenho e acessibilidade**
 
 Escopo recomendado:
 
-- definir prioridade entre atenção, locomoção, salto, expressão e interação;
-- criar fila opcional para comandos compatíveis;
-- definir quais ações interrompem, aguardam ou são ignoradas;
-- expor um estado de alto nível único para a interface;
-- adicionar testes automatizados para transições e limpeza;
-- iniciar medição real de FPS e tempo de frame.
+- medir FPS real, frame time médio e quedas de frame;
+- diferenciar metas de 60 Hz e 120 Hz;
+- pausar timelines quando a aba estiver oculta;
+- integrar `prefers-reduced-motion` ao motor GSAP;
+- oferecer modo reduzido manual no laboratório;
+- medir impacto de mais de uma instância.
 
 Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 07: máquina de estados, prioridade e fila.
-2. Testes automatizados e métricas reais.
+1. Protótipo 08: desempenho e acessibilidade.
+2. Testes de integração GSAP/DOM.
 3. Spritesheet oficial.
 4. Avaliar PixiJS.
 5. Integração experimental com cópia do tema Tray.
@@ -440,3 +505,17 @@ Próximo passo:
 - **Limitação:** braço e objeto usam alinhamento determinístico calibrado para
   o protótipo CSS; ainda não existe cinemática inversa nem física.
 - **Próximo passo:** definir prioridade, fila e regras formais de interrupção.
+
+### 2026-07-29 — Protótipo 07
+
+- **Branch:** `feature/state-orchestrator`
+- **Commit:** a confirmar após a publicação.
+- **Objetivo:** centralizar prioridade, fila e política de interrupção.
+- **Mudanças:** orquestrador puro, sete categorias de comando, ações atômicas,
+  fila limitada e ordenada, substituição de pendências repetidas, painel de
+  diagnóstico, limpeza, parada total e testes Vitest.
+- **Validação:** TypeScript, build Vite, `git diff --check` e sete testes
+  automatizados aprovados.
+- **Limitação:** testes ainda não renderizam DOM nem executam timelines GSAP
+  em navegador real.
+- **Próximo passo:** medir desempenho e integrar movimento reduzido ao motor.

@@ -47,6 +47,7 @@ Por isso, a ordem adotada é:
 | TypeScript | Regras, eventos, tipos e integração entre interface e motor |
 | GSAP | Timelines, easing, sincronização e controle dos movimentos |
 | Vite | Servidor local, atualização rápida e build |
+| Vitest | Testes automatizados das regras de orquestração |
 
 ### 3.1 Por que GSAP?
 
@@ -81,6 +82,8 @@ smart-mascots-lab/
 ├── src/
 │   ├── main.ts
 │   ├── motion-engine.ts
+│   ├── state-orchestrator.ts
+│   ├── state-orchestrator.test.ts
 │   └── style.css
 ├── AI_CONTEXT.md
 ├── README.md
@@ -112,10 +115,10 @@ Cada comando deve exibir uma versão.
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/object-interaction-engine
+git switch feature/state-orchestrator
 ```
 
-O `git switch` escolhe a branch do Protótipo 06. Ela já contém os protótipos
+O `git switch` escolhe a branch do Protótipo 07. Ela já contém os protótipos
 anteriores e a documentação em seu histórico.
 
 ### 5.3 Instalar e iniciar
@@ -401,6 +404,51 @@ O Byte olha para cima, tenta alcançar, percebe o limite e responde com uma
 expressão amigável. Essa falha intencional serve para testar personalidade,
 não apenas sucesso mecânico.
 
+### 10.8 Orquestração de comandos
+
+Até o Protótipo 06, cada controle chamava diretamente um método do motor.
+Existiam interrupções técnicas, mas não uma regra central para decidir qual
+ação deveria vencer.
+
+O Protótipo 07 adiciona `CommandOrchestrator`, uma classe pura que não conhece
+DOM nem GSAP. Cada comando informa:
+
+```typescript
+type MascotCommand = {
+  id: string
+  kind: CommandKind
+  label: string
+  priority: number
+  atomic?: boolean
+  execute: () => void
+}
+```
+
+As prioridades atuais são:
+
+| Nível | Categoria | Regra |
+|---:|---|---|
+| 100 | reset | interrompe tudo e limpa a fila |
+| 40 | interação e demo | inicia imediatamente e fica protegida |
+| 30 | salto | interrompe caminhada, expressão ou gesto |
+| 20 | locomoção | interrompe expressão ou gesto |
+| 10 | expressão e gesto | aguarda ações mais importantes |
+
+Uma ação `atomic` não pode ser interrompida por comandos comuns. Isso evita
+abandonar um produto no meio da apresentação. **Parar tudo** continua sendo
+a saída de segurança.
+
+Quando um comando precisa aguardar:
+
+1. ele entra numa fila de até quatro itens;
+2. a fila ordena a maior prioridade primeiro;
+3. itens de mesma prioridade preservam a ordem de chegada;
+4. um novo comando da mesma categoria substitui o anterior ainda pendente;
+5. quando o motor informa conclusão, o primeiro item é executado.
+
+Se o usuário clicar várias vezes no palco durante uma interação, interessa o
+destino mais recente, não uma caminhada por cada clique antigo.
+
 ## 11. Construção da caminhada
 
 `createLocomotion` recebe:
@@ -481,8 +529,13 @@ O motor não escreve diretamente nos painéis da página. Ele informa eventos:
 - `onAttentionStateChange`;
 - `onInteractionStateChange`;
 - `onExpressionChange`;
+- `onActionComplete`;
 - `onProgress`;
 - `onPlayStateChange`.
+
+`onActionComplete` é disparado depois que uma ação finita retorna ao `idle`.
+O orquestrador usa esse sinal para iniciar o próximo comando sem conhecer os
+detalhes das timelines.
 
 Essa inversão reduz o acoplamento. Uma futura interface em Canvas, Tray ou
 aplicativo poderá reutilizar conceitos do motor e apresentar os estados de
@@ -497,6 +550,7 @@ O CSS contém:
 - construção visual provisória do Byte;
 - palco, grid e marcador de destino;
 - produtos provisórios, pedestais e estado visual de objeto carregado;
+- painel do orquestrador, fila e decisões;
 - estados de foco e hover;
 - suporte a `prefers-reduced-motion`.
 
@@ -529,6 +583,12 @@ podem produzir saltos e resultados imprevisíveis.
 19. Interrompa o transporte com caminhada, salto e expressão.
 20. Confirme que o produto interrompido retorna imediatamente ao pedestal.
 21. Clique no servidor alto e observe a tentativa sem captura.
+22. Durante uma caminhada, solicite um salto e confirme a interrupção.
+23. Durante uma interação, solicite salto, caminhada e expressão.
+24. Confirme que esses comandos aparecem na fila por prioridade.
+25. Clique várias vezes no palco e confirme que só o último destino permanece.
+26. Use `Limpar fila` sem interromper a ação atual.
+27. Use `Parar tudo` durante uma interação.
 
 ### 15.2 Critérios de aprovação
 
@@ -546,6 +606,11 @@ podem produzir saltos e resultados imprevisíveis.
 - objeto e personagem se deslocam juntos durante o transporte;
 - o produto retorna à posição original após conclusão ou interrupção;
 - a falha por falta de alcance comunica intenção sem agressividade;
+- ações atômicas não são interrompidas por comandos comuns;
+- salto vence locomoção;
+- fila executa prioridade maior primeiro;
+- comandos repetidos pendentes são consolidados;
+- reset limpa estado ativo e fila;
 - um novo comando interrompe o anterior sem deixar membros deformados;
 - o build termina sem erros.
 
@@ -555,9 +620,11 @@ Antes de publicar:
 
 ```powershell
 npm run build
+npm test
 ```
 
-O comando executa primeiro o compilador TypeScript e depois o build do Vite.
+O primeiro comando executa o compilador TypeScript e o build do Vite. O
+segundo executa os testes automatizados do orquestrador.
 
 ## 16. Problemas conhecidos e diagnóstico
 
@@ -648,6 +715,7 @@ main
                 └── feature/jump-engine
                     └── feature/attention-engine
                         └── feature/object-interaction-engine
+                            └── feature/state-orchestrator
 ```
 
 Não é necessário mesclar uma branch anterior para testar a seguinte: cada
@@ -687,13 +755,19 @@ branch nova foi criada a partir da anterior.
 - reagir ao objeto.
 - restaurar o objeto depois de uma interrupção.
 
-### Protótipo 07 — Máquina completa — próximo
+### Protótipo 07 — Máquina completa — concluído
 
 - prioridade de estados;
 - fila e interrupção de ações;
-- ações automáticas;
-- reações a eventos;
 - testes automatizados.
+
+### Protótipo 08 — Desempenho e acessibilidade — próximo
+
+- medição real de FPS e tempo de frame;
+- pausa automática quando a aba estiver oculta;
+- modo de movimento reduzido integrado ao GSAP;
+- métricas para 60 e 120 Hz;
+- testes em múltiplas instâncias.
 
 ### Protótipo final
 

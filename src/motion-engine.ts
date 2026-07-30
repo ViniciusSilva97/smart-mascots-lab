@@ -30,6 +30,7 @@ type EngineCallbacks = {
   onAttentionStateChange: (state: AttentionState) => void
   onInteractionStateChange: (state: InteractionState) => void
   onExpressionChange: (expression: Expression | null) => void
+  onActionComplete: () => void
   onProgress: (progress: number) => void
   onPlayStateChange: (paused: boolean) => void
 }
@@ -98,6 +99,7 @@ export class ByteMotionEngine {
     const clampedTarget = gsap.utils.clamp(-this.maxPosition, this.maxPosition, targetX)
     if (Math.abs(clampedTarget - this.positionX) < 12) {
       this.play('idle')
+      this.callbacks.onActionComplete()
       return
     }
 
@@ -148,6 +150,7 @@ export class ByteMotionEngine {
         .call(() => {
           this.positionX = -210
           this.play('idle')
+          this.callbacks.onActionComplete()
         })
     })
   }
@@ -364,6 +367,7 @@ export class ByteMotionEngine {
           this.activeObject = null
           this.callbacks.onInteractionStateChange('idle')
           this.play('idle')
+          this.callbacks.onActionComplete()
         })
 
       return timeline
@@ -408,6 +412,7 @@ export class ByteMotionEngine {
         .call(() => {
           this.callbacks.onInteractionStateChange('idle')
           this.play('idle')
+          this.callbacks.onActionComplete()
         })
       return timeline
     })
@@ -534,7 +539,10 @@ export class ByteMotionEngine {
         duration: 0.32,
         ease: 'power2.inOut',
       })
-      .call(() => this.play('idle'))
+      .call(() => {
+        this.play('idle')
+        this.callbacks.onActionComplete()
+      })
 
     return timeline
   }
@@ -579,7 +587,10 @@ export class ByteMotionEngine {
       .call(() => {
         this.positionX = targetX
         this.callbacks.onLocomotionStateChange('idle')
-        if (settleToIdle) this.play('idle')
+        if (settleToIdle) {
+          this.play('idle')
+          this.callbacks.onActionComplete()
+        }
       })
     return timeline
   }
@@ -646,7 +657,10 @@ export class ByteMotionEngine {
       .call(() => {
         this.positionX = targetX
         this.callbacks.onJumpStateChange('grounded')
-        if (settleToIdle) this.play('idle')
+        if (settleToIdle) {
+          this.play('idle')
+          this.callbacks.onActionComplete()
+        }
       })
 
     return timeline

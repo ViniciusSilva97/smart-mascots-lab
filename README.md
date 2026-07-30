@@ -8,17 +8,25 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 06 — Interação com objetos**
+**Protótipo 07 — Orquestração de estados**
 
 - animações coordenadas com GSAP;
+- orquestrador independente para prioridade, fila e interrupção;
+- painel em tempo real com ação ativa, decisão e comandos aguardando;
+- interações e demonstração protegidas como sequências atômicas;
+- saltos interrompem caminhadas;
+- expressões aguardam ações de maior prioridade;
+- comandos repetidos ainda na fila são substituídos pelo mais recente;
+- fila limitada a quatro comandos;
+- `Parar tudo` interrompe qualquer ação e limpa a fila;
+- testes automatizados das regras de orquestração com Vitest;
 - estados de locomoção: `idle`, `preparing`, `walking` e `braking`;
 - estados de interação: aproximação, alinhamento, alcance, captura,
   transporte, apresentação e devolução;
 - Byte caminha até CPU, SSD ou GPU, pega o objeto, carrega, apresenta e
   devolve ao pedestal;
 - reação simpática quando o servidor está fora de alcance;
-- interrupção segura: um novo comando devolve imediatamente o objeto à
-  origem;
+- interrupção segura: `Parar tudo` devolve imediatamente o objeto à origem;
 - caminhada para esquerda e direita;
 - corrida;
 - salto parado e salto longo;
@@ -44,7 +52,7 @@ Pré-requisitos:
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/object-interaction-engine
+git switch feature/state-orchestrator
 npm install
 npm run dev
 ```
@@ -58,13 +66,14 @@ Abra o endereço mostrado pelo Vite, normalmente
 |---|---|
 | `npm run dev` | Inicia o ambiente de desenvolvimento |
 | `npm run build` | Valida o TypeScript e gera o build |
+| `npm test` | Executa os testes automatizados |
 | `npm run preview` | Visualiza localmente o build de produção |
 
 ## Controles do laboratório
 
 | Entrada | Ação |
 |---|---|
-| Botões `1` a `5` | Escolhem um movimento |
+| Botões `1` a `6` | Escolhem um movimento |
 | `←` e `→` | Caminham na direção escolhida |
 | `Shift + ←` ou `Shift + →` | Correm |
 | `↑` | Salta no lugar |
@@ -76,6 +85,8 @@ Abra o endereço mostrado pelo Vite, normalmente
 | Clique no palco | Caminha até o destino |
 | `Shift + clique` | Corre até o destino |
 | `Espaço` | Pausa ou continua a timeline |
+| `Limpar fila` | Remove comandos aguardando sem parar a ação atual |
+| `Parar tudo` | Interrompe a ação atual, limpa a fila e volta ao `idle` |
 
 ## Documentação
 
@@ -94,6 +105,7 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `feature/jump-engine` | Protótipo 04: salto e aterrissagem |
 | `feature/attention-engine` | Protótipo 05: expressões e atenção |
 | `feature/object-interaction-engine` | Protótipo 06: interação com objetos |
+| `feature/state-orchestrator` | Protótipo 07: prioridade, fila e interrupção |
 
 As branches anteriores são preservadas como marcos de comparação. Não faça
 merge na `main` enquanto o laboratório ainda estiver em experimentação.

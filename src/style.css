@@ -203,6 +203,44 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); }
 .jump-buttons small { display: block; margin-top: 7px; color: #8b9490; font: 5px 'Press Start 2P'; }
 .click-tip { color: #68716d; font-size: 9px; line-height: 1.5; margin: 13px 0 0; }
 .click-tip strong { color: var(--green); }
+.orchestrator-panel {
+  margin-top: 16px; padding: 12px; border: 1px solid #34403a;
+  background: #0a0d0c; box-shadow: inset 0 0 18px rgba(121, 242, 68, .035);
+}
+.command-active, .command-decision {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding-bottom: 9px; font: 5px 'Press Start 2P';
+}
+.command-active span, .command-decision span, .queue-title { color: #65706b; }
+.command-active strong, .command-decision strong {
+  color: var(--green); max-width: 122px; overflow: hidden; text-align: right;
+  text-overflow: ellipsis; white-space: nowrap; font: 5px 'Press Start 2P';
+}
+.command-active strong[data-atomic="true"] { color: var(--yellow); }
+.command-decision strong[data-decision="queued"],
+.command-decision strong[data-decision="replaced-in-queue"] { color: #f0b65e; }
+.command-decision strong[data-decision="queue-full"] { color: #ff735f; }
+.queue-title {
+  display: flex; justify-content: space-between; padding: 9px 0 7px;
+  border-top: 1px solid #242c29; font: 5px 'Press Start 2P';
+}
+.queue-title b { color: var(--yellow); font-weight: normal; }
+.command-queue {
+  min-height: 22px; max-height: 82px; margin: 0; padding: 0; overflow: auto;
+  list-style: none;
+}
+.command-queue li {
+  display: flex; justify-content: space-between; gap: 6px; padding: 6px 0;
+  border-bottom: 1px dashed #242c29; color: #a2aaa6; font: 5px 'Press Start 2P';
+}
+.command-queue li b { color: #68736e; font-weight: normal; white-space: nowrap; }
+.queue-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
+.queue-actions button {
+  min-width: 0; border: 1px solid #39423e; background: #151918; color: #8e9893;
+  padding: 7px 3px; cursor: pointer; font: 4px 'Press Start 2P';
+}
+.queue-actions button:hover { color: white; border-color: var(--green); }
+.queue-actions #stop-all { color: #e5b967; border-color: #5c4a29; }
 .background-options { display: flex; gap: 9px; margin-top: 16px; }
 .bg-option { width: 36px; height: 30px; border: 2px solid #343a38; background: #181d1b; cursor: pointer; }
 .bg-option:nth-child(2) { background: #e8e5d7; }

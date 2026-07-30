@@ -8,6 +8,12 @@ import {
   type LocomotionState,
   type Motion,
 } from './motion-engine'
+import {
+  CommandOrchestrator,
+  type CommandDecision,
+  type MascotCommand,
+  type OrchestratorSnapshot,
+} from './state-orchestrator'
 
 const root = document.documentElement
 
@@ -42,7 +48,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 06 • OBJETOS</p>
+      <p class="eyebrow">// PROTÓTIPO 07 • ORQUESTRAÇÃO</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -62,7 +68,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
               <span>${icon}</span>${label}<i></i>
             </button>`).join('')}
         </div>
-        <p class="keyboard-tip"><kbd>1</kbd>—<kbd>5</kbd> Atalhos de animação</p>
+        <p class="keyboard-tip"><kbd>1</kbd>—<kbd>6</kbd> Atalhos de animação</p>
         <div class="separator"></div>
         <span class="panel-label">PERSONALIDADE</span>
         <div class="expression-list">
@@ -141,6 +147,26 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         </div>
         <p class="click-tip">Clique no palco para escolher o destino. Use <strong>Shift</strong> para correr.</p>
         <div class="separator"></div>
+        <span class="panel-label">ORQUESTRAÇÃO</span>
+        <div class="orchestrator-panel">
+          <div class="command-active">
+            <span>ATIVO</span>
+            <strong id="command-active">RESPIRANDO</strong>
+          </div>
+          <div class="command-decision">
+            <span>DECISÃO</span>
+            <strong id="command-decision">PRONTO</strong>
+          </div>
+          <span class="queue-title">FILA <b id="queue-count">0/4</b></span>
+          <ol class="command-queue" id="command-queue">
+            <li>FILA VAZIA</li>
+          </ol>
+          <div class="queue-actions">
+            <button id="clear-queue" type="button">LIMPAR FILA</button>
+            <button id="stop-all" type="button">PARAR TUDO</button>
+          </div>
+        </div>
+        <div class="separator"></div>
         <span class="panel-label">AMBIENTE</span>
         <div class="background-options">
           <button class="bg-option active" data-bg="dark" aria-label="Fundo escuro"></button>
@@ -171,6 +197,10 @@ const pause = document.querySelector<HTMLButtonElement>('#pause')!
 const progress = document.querySelector<HTMLInputElement>('#progress')!
 const progressValue = document.querySelector<HTMLElement>('#progress-value')!
 const targetMarker = document.querySelector<HTMLElement>('#target-marker')!
+const commandActive = document.querySelector<HTMLElement>('#command-active')!
+const commandDecision = document.querySelector<HTMLElement>('#command-decision')!
+const commandQueue = document.querySelector<HTMLOListElement>('#command-queue')!
+const queueCount = document.querySelector<HTMLElement>('#queue-count')!
 
 const locomotionLabels: Record<LocomotionState, string> = {
   idle: 'IDLE',
@@ -220,6 +250,33 @@ const speechByMotion: Record<Motion, string> = {
   celebrate: 'Compra concluída!',
 }
 
+const decisionLabels: Record<CommandDecision, string> = {
+  started: 'INICIADO',
+  interrupted: 'INTERROMPEU',
+  queued: 'AGUARDANDO',
+  'replaced-in-queue': 'FILA ATUALIZADA',
+  'queue-full': 'FILA CHEIA',
+  reset: 'REINICIADO',
+  completed: 'CONCLUÍDO',
+}
+
+const renderOrchestrator = (snapshot: OrchestratorSnapshot) => {
+  commandActive.textContent = snapshot.active?.label.toUpperCase() ?? 'RESPIRANDO'
+  commandActive.dataset.atomic = String(Boolean(snapshot.active?.atomic))
+  commandDecision.textContent = decisionLabels[snapshot.lastDecision]
+  commandDecision.dataset.decision = snapshot.lastDecision
+  queueCount.textContent = `${snapshot.queue.length}/4`
+  commandQueue.innerHTML = snapshot.queue.length
+    ? snapshot.queue.map(item => `
+        <li>
+          <span>${item.label}</span>
+          <b>P${item.priority}${item.atomic ? ' • PROTEGIDO' : ''}</b>
+        </li>`).join('')
+    : '<li>FILA VAZIA</li>'
+}
+
+let orchestrator: CommandOrchestrator
+
 const engine = new ByteMotionEngine(byte, {
   onMotionChange(motion) {
     byte.dataset.motion = motion
@@ -249,6 +306,9 @@ const engine = new ByteMotionEngine(byte, {
       )
     })
   },
+  onActionComplete() {
+    orchestrator.completeActive()
+  },
   onProgress(value) {
     const percent = Math.round(value * 100)
     progress.value = String(Math.round(value * 1000))
@@ -260,30 +320,102 @@ const engine = new ByteMotionEngine(byte, {
   },
 })
 
+orchestrator = new CommandOrchestrator(renderOrchestrator)
+
+let commandSequence = 0
+const command = (
+  input: Omit<MascotCommand, 'id'>,
+): MascotCommand => ({
+  ...input,
+  id: `${input.kind}-${commandSequence++}`,
+})
+
+const dispatchMotion = (motion: Motion) => {
+  if (motion === 'idle') {
+    orchestrator.dispatch(command({
+      kind: 'reset',
+      label: 'Parado',
+      priority: 100,
+      execute: () => engine.play('idle'),
+    }))
+    return
+  }
+
+  if (motion === 'walk') {
+    orchestrator.dispatch(command({
+      kind: 'locomotion',
+      label: 'Caminhar',
+      priority: 20,
+      execute: () => engine.walk(1),
+    }))
+    return
+  }
+
+  if (motion === 'jump') {
+    orchestrator.dispatch(command({
+      kind: 'jump',
+      label: 'Saltar',
+      priority: 30,
+      execute: () => engine.jump(),
+    }))
+    return
+  }
+
+  orchestrator.dispatch(command({
+    kind: 'gesture',
+    label: motions.find(item => item.id === motion)!.label,
+    priority: 10,
+    execute: () => engine.play(motion),
+  }))
+}
+
+const dispatchWalk = (direction: -1 | 1, running = false) => {
+  orchestrator.dispatch(command({
+    kind: 'locomotion',
+    label: running ? 'Correr' : direction === -1 ? 'Andar à esquerda' : 'Andar à direita',
+    priority: 20,
+    execute: () => engine.walk(direction, running),
+  }))
+}
+
+const dispatchJump = (longJump = false) => {
+  orchestrator.dispatch(command({
+    kind: 'jump',
+    label: longJump ? 'Salto longo' : 'Saltar',
+    priority: 30,
+    execute: () => engine.jump(longJump),
+  }))
+}
+
 const updateStageBounds = () => engine.setBounds(stage.clientWidth / 2 - 70)
 updateStageBounds()
 window.addEventListener('resize', updateStageBounds)
 
 document.querySelectorAll<HTMLButtonElement>('.motion-button').forEach(button => {
   button.addEventListener('click', () => {
-    const motion = button.dataset.motion as Motion
-    if (motion === 'walk') engine.walk(1)
-    else if (motion === 'jump') engine.jump()
-    else engine.play(motion)
+    dispatchMotion(button.dataset.motion as Motion)
   })
 })
 
 document.querySelectorAll<HTMLButtonElement>('.expression-button').forEach(button => {
   button.addEventListener('click', () => {
     const expression = button.dataset.expression as Expression
-    speech.textContent = {
+    const expressionSpeech = {
       friendly: 'Olá! Posso ajudar?',
       curious: 'Hmm... quero entender melhor.',
       surprised: 'Uau! Olha este detalhe!',
       confirming: 'Certo! Entendi perfeitamente.',
       focused: 'Analisando cada detalhe...',
     }[expression]
-    engine.express(expression)
+    orchestrator.dispatch(command({
+      kind: 'expression',
+      label: expressions.find(item => item.id === expression)!.label,
+      priority: 10,
+      execute: () => {
+        speech.textContent = expressionSpeech
+        engine.express(expression)
+      },
+    }))
   })
 })
 
@@ -312,16 +444,29 @@ pause.addEventListener('click', () => {
 
 document.querySelector<HTMLButtonElement>('#restart')!.addEventListener('click', () => engine.restart())
 document.querySelector<HTMLButtonElement>('#demo')!.addEventListener('click', () => {
-  speech.textContent = 'Demonstração completa iniciada!'
-  engine.playDemo()
+  orchestrator.dispatch(command({
+    kind: 'demo',
+    label: 'Demonstração',
+    priority: 40,
+    atomic: true,
+    execute: () => {
+      speech.textContent = 'Demonstração completa iniciada!'
+      engine.playDemo()
+    },
+  }))
 })
 progress.addEventListener('input', () => engine.setProgress(Number(progress.value) / 1000))
 
-document.querySelector<HTMLButtonElement>('#walk-left')!.addEventListener('click', () => engine.walk(-1))
-document.querySelector<HTMLButtonElement>('#walk-right')!.addEventListener('click', () => engine.walk(1))
-document.querySelector<HTMLButtonElement>('#run')!.addEventListener('click', () => engine.walk(1, true))
-document.querySelector<HTMLButtonElement>('#jump')!.addEventListener('click', () => engine.jump())
-document.querySelector<HTMLButtonElement>('#long-jump')!.addEventListener('click', () => engine.jump(true))
+document.querySelector<HTMLButtonElement>('#walk-left')!.addEventListener('click', () => dispatchWalk(-1))
+document.querySelector<HTMLButtonElement>('#walk-right')!.addEventListener('click', () => dispatchWalk(1))
+document.querySelector<HTMLButtonElement>('#run')!.addEventListener('click', () => dispatchWalk(1, true))
+document.querySelector<HTMLButtonElement>('#jump')!.addEventListener('click', () => dispatchJump())
+document.querySelector<HTMLButtonElement>('#long-jump')!.addEventListener('click', () => dispatchJump(true))
+document.querySelector<HTMLButtonElement>('#clear-queue')!.addEventListener('click', () => orchestrator.clearQueue())
+document.querySelector<HTMLButtonElement>('#stop-all')!.addEventListener('click', () => {
+  speech.textContent = 'Tudo certo. Voltando à posição de atenção.'
+  dispatchMotion('idle')
+})
 
 const trackingButton = document.querySelector<HTMLButtonElement>('#tracking')!
 trackingButton.addEventListener('click', () => {
@@ -342,13 +487,29 @@ document.querySelectorAll<HTMLButtonElement>('.product-target').forEach(target =
 
     if (target.dataset.reachable === 'true') {
       const product = target.querySelector<HTMLElement>('.product-object')!
-      speech.textContent = `Vou buscar e apresentar ${label} para você!`
-      engine.interact(product, targetX)
+      orchestrator.dispatch(command({
+        kind: 'interaction',
+        label: `Apresentar ${label}`,
+        priority: 40,
+        atomic: true,
+        execute: () => {
+          speech.textContent = `Vou buscar e apresentar ${label} para você!`
+          engine.interact(product, targetX)
+        },
+      }))
       return
     }
 
-    speech.textContent = `${label} está alto demais. Vou pedir uma ajudinha!`
-    engine.inspectOutOfReach(direction)
+    orchestrator.dispatch(command({
+      kind: 'interaction',
+      label: `Alcançar ${label}`,
+      priority: 40,
+      atomic: true,
+      execute: () => {
+        speech.textContent = `${label} está alto demais. Vou pedir uma ajudinha!`
+        engine.inspectOutOfReach(direction)
+      },
+    }))
   })
 })
 
@@ -369,26 +530,31 @@ stage.addEventListener('click', event => {
   targetMarker.style.left = `${localX}px`
   targetMarker.classList.remove('visible')
   requestAnimationFrame(() => targetMarker.classList.add('visible'))
-  engine.walkTo(targetX, event.shiftKey)
+  orchestrator.dispatch(command({
+    kind: 'locomotion',
+    label: event.shiftKey ? 'Correr ao destino' : 'Ir ao destino',
+    priority: 20,
+    execute: () => engine.walkTo(targetX, event.shiftKey),
+  }))
 })
 
 window.addEventListener('keydown', event => {
   const index = Number(event.key) - 1
-  if (motions[index]) engine.play(motions[index].id)
+  if (motions[index]) dispatchMotion(motions[index].id)
   if (event.code === 'Space') {
     event.preventDefault()
     engine.togglePause()
   }
   if (event.key === 'ArrowLeft') {
     event.preventDefault()
-    engine.walk(-1, event.shiftKey)
+    dispatchWalk(-1, event.shiftKey)
   }
   if (event.key === 'ArrowRight') {
     event.preventDefault()
-    engine.walk(1, event.shiftKey)
+    dispatchWalk(1, event.shiftKey)
   }
   if (event.key === 'ArrowUp') {
     event.preventDefault()
-    engine.jump(event.shiftKey)
+    dispatchJump(event.shiftKey)
   }
 })
