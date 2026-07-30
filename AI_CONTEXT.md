@@ -32,19 +32,19 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 09 — Robustez e testes de integração**
+**Protótipo 09 — Robustez e testes de integração — etapa 1**
 
 Branch canônica:
 
 ```text
-feature/performance-accessibility
+feature/robustness-integration-tests
 ```
 
 Commit de implementação:
 
 ```text
-f4d387bf53602310d09e9eec5997d541f4d019ed
-feat: add performance and accessibility
+1f817b27bbe902004dd795fd8efd2cd3fddcb187
+test: add browser integration infrastructure
 ```
 
 ### 3.2 Histórico
@@ -62,6 +62,7 @@ feat: add performance and accessibility
 | Protótipo 06 | `feature/object-interaction-engine` | `6fb2e8f` |
 | Protótipo 07 | `feature/state-orchestrator` | `4bfd05f` |
 | Protótipo 08 | `feature/performance-accessibility` | `f4d387b` |
+| Protótipo 09 — etapa 1 | `feature/robustness-integration-tests` | `1f817b2` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -72,6 +73,8 @@ antes de testar o 02 ou 03.
 - TypeScript 6;
 - GSAP 3;
 - Vitest 4;
+- Playwright 1.62;
+- GitHub Actions;
 - HTML/CSS sem framework de interface;
 - npm e `package-lock.json`.
 
@@ -87,6 +90,9 @@ Não adicionar React, Vue, Phaser, PixiJS ou Rive sem uma decisão explícita.
 | `src/performance-monitor.test.ts` | testes de 60/120 Hz e quedas |
 | `src/state-orchestrator.ts` | prioridade, fila e política de interrupção |
 | `src/state-orchestrator.test.ts` | testes unitários da orquestração |
+| `tests/browser/lab.spec.ts` | integração real desktop e mobile |
+| `playwright.config.ts` | projetos Chromium e servidor de preview |
+| `.github/workflows/browser-tests.yml` | automação unitária e de navegador |
 | `src/style.css` | identidade, layout, Byte provisório e responsividade |
 | `index.html` | shell de entrada |
 | `docs/TECHNICAL_GUIDE.md` | explicação humana completa |
@@ -194,6 +200,24 @@ replaceTimeline(() => this.createMotion(motion))
 ```
 
 A função fábrica só cria a nova timeline depois da limpeza.
+
+### 7.1 Métodos nativos devem preservar o contexto
+
+No Protótipo 08, o monitor armazenava `requestAnimationFrame` diretamente e
+o chamava como propriedade de outra instância. O Chrome exige `window` como
+receptor e lançou:
+
+```text
+TypeError: Illegal invocation
+```
+
+Como a falha acontecia antes do registro dos listeners, nenhum comando da
+interface respondia. A correção usa wrappers que chamam
+`window.requestAnimationFrame` e `window.cancelAnimationFrame`.
+
+O teste unitário simula um método que rejeita o receptor incorreto. O
+Playwright registra `pageerror` antes da navegação para proteger a
+inicialização completa contra novas exceções desse tipo.
 
 ## 8. Estados atuais
 
@@ -361,6 +385,8 @@ Antes de publicar:
 npm install
 npm run build
 npm test
+npx playwright install chromium
+npm run test:browser
 git diff --check
 ```
 
@@ -405,7 +431,8 @@ Teste manual:
 ## 12. Problemas e limitações conhecidas
 
 - `/favicon.ico` pode retornar 404; é inofensivo.
-- testes automatizados cobrem cálculos e orquestrador, mas não navegador real;
+- Playwright cobre inicialização e comandos essenciais, mas ainda não sessões
+  longas, múltiplas instâncias nem consumo de memória;
 - monitor identifica 60/120 Hz, não todas as frequências possíveis;
 - quedas exibidas pertencem à janela móvel, não ao total da sessão;
 - o Byte definitivo e spritesheets ainda não existem neste projeto;
@@ -434,12 +461,10 @@ Teste manual:
 
 ## 14. Próximo passo recomendado
 
-**Protótipo 08 — Desempenho e acessibilidade**
+**Protótipo 09 — Robustez, etapa 2**
 
 Escopo recomendado:
 
-- executar timelines GSAP em ambiente DOM de teste;
-- testar interrupção e limpeza com elementos reais;
 - suportar criação e destruição explícita do motor;
 - medir mais de uma instância do Byte;
 - investigar vazamento de tweens, listeners e memória;
@@ -449,7 +474,7 @@ Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 09: robustez e testes de integração.
+1. Protótipo 09, etapa 2: ciclo de vida, múltiplas instâncias e memória.
 2. Spritesheet oficial.
 3. Avaliar PixiJS.
 4. Integração experimental com cópia do tema Tray.
@@ -573,3 +598,18 @@ Próximo passo:
 - **Limitação:** falta validação visual em navegador real, aparelhos móveis e
   múltiplas instâncias.
 - **Próximo passo:** testes DOM/GSAP, ciclo de destruição e sessões longas.
+
+### 2026-07-30 — Protótipo 09, etapa 1
+
+- **Branch:** `feature/robustness-integration-tests`
+- **Commit remoto da etapa:** `1f817b27bbe902004dd795fd8efd2cd3fddcb187`.
+- **Objetivo:** detectar em navegador real falhas de inicialização e de
+  integração que TypeScript e testes unitários não observam.
+- **Mudanças:** Playwright, projetos desktop e mobile, seis casos de
+  navegador, captura de `pageerror`, scripts npm e workflow GitHub Actions.
+- **Validação:** 13 testes unitários, build Vite, descoberta dos seis casos
+  Playwright e execução no Chromium pelo GitHub Actions.
+- **Limitação:** ainda não cobre criação e destruição do motor, múltiplas
+  instâncias, sessões longas nem medição de memória.
+- **Próximo passo:** introduzir ciclo de vida explícito e provar que listeners,
+  timelines e monitores são liberados.
