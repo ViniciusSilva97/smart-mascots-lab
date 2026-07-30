@@ -3,6 +3,7 @@ import {
   type AttentionState,
   ByteMotionEngine,
   type Expression,
+  type InteractionState,
   type JumpState,
   type LocomotionState,
   type Motion,
@@ -41,7 +42,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 05 • ATENÇÃO</p>
+      <p class="eyebrow">// PROTÓTIPO 06 • OBJETOS</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -85,9 +86,22 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <div class="stage" id="stage">
           <div class="grid"></div>
           <div class="target-marker" id="target-marker" aria-hidden="true"></div>
-          <button class="detail-target detail-one" data-direction="-1" data-label="CPU">CPU<small>DETALHE</small></button>
-          <button class="detail-target detail-two" data-direction="1" data-label="SSD">SSD<small>DETALHE</small></button>
-          <button class="detail-target detail-three" data-direction="1" data-label="GPU">GPU<small>DETALHE</small></button>
+          <button class="product-target product-cpu" data-label="CPU" data-reachable="true" type="button">
+            <span class="product-object object-cpu" aria-hidden="true"><i></i></span>
+            <strong>CPU</strong><small>PEGAR</small><b class="object-pedestal"></b>
+          </button>
+          <button class="product-target product-ssd" data-label="SSD" data-reachable="true" type="button">
+            <span class="product-object object-ssd" aria-hidden="true"><i></i></span>
+            <strong>SSD</strong><small>PEGAR</small><b class="object-pedestal"></b>
+          </button>
+          <button class="product-target product-gpu" data-label="GPU" data-reachable="true" type="button">
+            <span class="product-object object-gpu" aria-hidden="true"><i></i></span>
+            <strong>GPU</strong><small>PEGAR</small><b class="object-pedestal"></b>
+          </button>
+          <button class="product-target product-server unreachable" data-label="SERVIDOR" data-reachable="false" type="button">
+            <span class="product-object object-server" aria-hidden="true"><i></i></span>
+            <strong>SERVIDOR</strong><small>FORA DO ALCANCE</small>
+          </button>
           <div class="speech" id="speech">Olá! Eu sou o Byte.</div>
           <div class="byte-wrap" id="byte-wrap">
             <div class="byte" id="byte" data-motion="idle" role="img" aria-label="Byte, mascote pixelado provisório">
@@ -185,6 +199,18 @@ const attentionLabels: Record<AttentionState, string> = {
   focused: 'FOCADO',
 }
 
+const interactionLabels: Record<InteractionState, string> = {
+  idle: 'ATENTO',
+  approaching: 'APROXIMANDO',
+  aligning: 'ALINHANDO',
+  reaching: 'ALCANÇANDO',
+  grabbing: 'PEGANDO',
+  carrying: 'CARREGANDO',
+  presenting: 'APRESENTANDO',
+  releasing: 'DEVOLVENDO',
+  'out-of-reach': 'FORA DO ALCANCE',
+}
+
 const speechByMotion: Record<Motion, string> = {
   idle: 'Olá! Eu sou o Byte.',
   walk: 'Vamos explorar a loja?',
@@ -197,11 +223,11 @@ const speechByMotion: Record<Motion, string> = {
 const engine = new ByteMotionEngine(byte, {
   onMotionChange(motion) {
     byte.dataset.motion = motion
-  state.textContent = motions.find(item => item.id === motion)!.label.toUpperCase()
-  speech.textContent = speechByMotion[motion]
-  document.querySelectorAll('.motion-button').forEach(button => {
-    button.classList.toggle('active', (button as HTMLElement).dataset.motion === motion)
-  })
+    state.textContent = motions.find(item => item.id === motion)!.label.toUpperCase()
+    speech.textContent = speechByMotion[motion]
+    document.querySelectorAll('.motion-button').forEach(button => {
+      button.classList.toggle('active', (button as HTMLElement).dataset.motion === motion)
+    })
   },
   onLocomotionStateChange(locomotionState) {
     state.textContent = locomotionLabels[locomotionState]
@@ -211,6 +237,9 @@ const engine = new ByteMotionEngine(byte, {
   },
   onAttentionStateChange(attentionState) {
     state.textContent = attentionLabels[attentionState]
+  },
+  onInteractionStateChange(interactionState) {
+    if (interactionState !== 'idle') state.textContent = interactionLabels[interactionState]
   },
   onExpressionChange(expression) {
     document.querySelectorAll('.expression-button').forEach(button => {
@@ -302,12 +331,24 @@ trackingButton.addEventListener('click', () => {
   engine.setTracking(enabled)
 })
 
-document.querySelectorAll<HTMLButtonElement>('.detail-target').forEach(target => {
+document.querySelectorAll<HTMLButtonElement>('.product-target').forEach(target => {
   target.addEventListener('click', event => {
     event.stopPropagation()
-    const direction = Number(target.dataset.direction) as -1 | 1
-    speech.textContent = `Analisando ${target.dataset.label} com atenção.`
-    engine.express('focused', direction)
+    const stageRect = stage.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const targetX = targetRect.left + targetRect.width / 2 - (stageRect.left + stageRect.width / 2)
+    const direction = (targetX >= 0 ? 1 : -1) as -1 | 1
+    const label = target.dataset.label!
+
+    if (target.dataset.reachable === 'true') {
+      const product = target.querySelector<HTMLElement>('.product-object')!
+      speech.textContent = `Vou buscar e apresentar ${label} para você!`
+      engine.interact(product, targetX)
+      return
+    }
+
+    speech.textContent = `${label} está alto demais. Vou pedir uma ajudinha!`
+    engine.inspectOutOfReach(direction)
   })
 })
 

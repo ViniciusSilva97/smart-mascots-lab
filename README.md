@@ -8,10 +8,17 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 05 — Expressões e atenção**
+**Protótipo 06 — Interação com objetos**
 
 - animações coordenadas com GSAP;
 - estados de locomoção: `idle`, `preparing`, `walking` e `braking`;
+- estados de interação: aproximação, alinhamento, alcance, captura,
+  transporte, apresentação e devolução;
+- Byte caminha até CPU, SSD ou GPU, pega o objeto, carrega, apresenta e
+  devolve ao pedestal;
+- reação simpática quando o servidor está fora de alcance;
+- interrupção segura: um novo comando devolve imediatamente o objeto à
+  origem;
 - caminhada para esquerda e direita;
 - corrida;
 - salto parado e salto longo;
@@ -37,7 +44,7 @@ Pré-requisitos:
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/attention-engine
+git switch feature/object-interaction-engine
 npm install
 npm run dev
 ```
@@ -64,7 +71,8 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `Shift + ↑` | Executa salto longo |
 | Movimento do cursor | Direciona olhos, cabeça e antena |
 | Botões de personalidade | Executam expressões |
-| Clique em CPU, SSD ou GPU | Foca no detalhe escolhido |
+| Clique em CPU, SSD ou GPU | Busca, carrega, apresenta e devolve o objeto |
+| Clique no servidor alto | Tenta alcançar e reage de forma simpática |
 | Clique no palco | Caminha até o destino |
 | `Shift + clique` | Corre até o destino |
 | `Espaço` | Pausa ou continua a timeline |
@@ -85,6 +93,7 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `docs/project-documentation` | Guia técnico e contexto para IA |
 | `feature/jump-engine` | Protótipo 04: salto e aterrissagem |
 | `feature/attention-engine` | Protótipo 05: expressões e atenção |
+| `feature/object-interaction-engine` | Protótipo 06: interação com objetos |
 
 As branches anteriores são preservadas como marcos de comparação. Não faça
 merge na `main` enquanto o laboratório ainda estiver em experimentação.

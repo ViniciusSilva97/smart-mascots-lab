@@ -107,15 +107,58 @@ kbd { border: 1px solid #464d4a; padding: 2px 4px; color: #a7afab; }
 @keyframes target-pulse {
   50% { opacity: 1; transform: translateX(-50%) scale(1.25); box-shadow: 0 0 12px var(--green); }
 }
-.detail-target {
-  position: absolute; z-index: 2; border: 1px dashed #53615b; background: rgba(9, 11, 11, .72);
-  color: var(--yellow); padding: 7px 9px; cursor: pointer; font: 7px 'Press Start 2P';
+.product-target {
+  position: absolute; z-index: 2; bottom: 76px; width: 68px; height: 105px;
+  border: 0; background: transparent; color: var(--yellow); padding: 0; cursor: pointer;
+  font: 6px 'Press Start 2P'; text-align: center;
 }
-.detail-target small { display: block; margin-top: 5px; color: #68736e; font: 5px 'Press Start 2P'; }
-.detail-target:hover { border-color: var(--green); color: var(--green); box-shadow: 0 0 12px rgba(121, 242, 68, .25); }
-.detail-one { left: 7%; top: 34%; }
-.detail-two { right: 8%; top: 25%; }
-.detail-three { right: 14%; bottom: 28%; }
+.product-target strong, .product-target small {
+  position: absolute; left: 50%; z-index: 2; width: max-content; transform: translateX(-50%);
+}
+.product-target strong { bottom: 22px; font: 6px 'Press Start 2P'; }
+.product-target small { bottom: 11px; color: #737e79; font: 4px 'Press Start 2P'; }
+.product-object {
+  position: absolute; z-index: 4; left: 15px; bottom: 40px; width: 38px; height: 42px;
+  border: 4px solid var(--yellow); background: #111816; box-shadow: 4px 4px 0 #000;
+  transform-origin: 50% 80%; will-change: transform;
+}
+.product-object::before, .product-object::after, .product-object i {
+  content: ''; position: absolute; display: block; background: var(--green);
+}
+.object-cpu::before { left: 5px; top: 6px; width: 20px; height: 4px; box-shadow: 0 9px 0 #3e4945; }
+.object-cpu::after { left: 6px; bottom: 5px; width: 5px; height: 5px; box-shadow: 13px 0 0 #3e4945; }
+.object-ssd { width: 42px; height: 28px; left: 13px; bottom: 40px; border-color: #d8ddda; }
+.object-ssd::before { inset: 5px; border: 2px solid var(--green); background: transparent; }
+.object-ssd::after { right: -7px; bottom: 3px; width: 5px; height: 3px; box-shadow: 0 -7px 0 #d8ddda; }
+.object-gpu { width: 48px; height: 30px; left: 10px; bottom: 39px; border-color: var(--green); }
+.object-gpu::before { left: 5px; top: 5px; width: 12px; height: 12px; border: 3px solid var(--yellow); background: transparent; }
+.object-gpu::after { right: 4px; top: 6px; width: 8px; height: 12px; background: #56615c; }
+.object-pedestal {
+  position: absolute; left: 8px; right: 8px; bottom: 0; height: 7px;
+  border: 1px solid #53615b; background: #252c29; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.product-target:hover .product-object {
+  border-color: #fff36a; filter: drop-shadow(0 0 7px rgba(121, 242, 68, .55));
+}
+.product-target:hover strong { color: var(--green); }
+.product-object[data-held="true"] {
+  filter: drop-shadow(0 0 10px rgba(245, 223, 32, .7));
+}
+.product-cpu { left: 4%; }
+.product-ssd { right: 4%; }
+.product-gpu { right: 20%; }
+.product-server {
+  top: 76px; right: 4%; bottom: auto; width: 86px; height: 78px;
+  border: 1px dashed #6b5543; background: rgba(9, 11, 11, .65);
+}
+.product-server .product-object {
+  left: 22px; bottom: 27px; width: 42px; height: 43px; border-color: #bf7e4d;
+}
+.object-server::before { left: 6px; right: 6px; top: 7px; height: 3px; box-shadow: 0 9px 0 var(--green), 0 18px 0 #56615c; }
+.object-server::after { right: 5px; top: 5px; width: 3px; height: 3px; box-shadow: 0 9px 0 var(--yellow), 0 18px 0 #bf7e4d; }
+.product-server strong { bottom: 9px; }
+.product-server small { display: none; }
+.product-server:hover { border-color: #bf7e4d; }
 .speech { position: absolute; z-index: 3; left: 50%; top: 74px; transform: translateX(-50%); width: max-content; max-width: 80%; background: #f4f1df; color: #111; padding: 13px 15px; font: 9px 'Press Start 2P'; box-shadow: 5px 5px 0 #000; }
 .speech::after { content: ''; position: absolute; bottom: -10px; left: 50%; border: 6px solid transparent; border-top-color: #f4f1df; }
 
@@ -187,7 +230,11 @@ footer { border-top: 1px solid var(--line); border-bottom: 0; color: #555d59; fo
   .keyboard-tip { display: none; }
   .stage { min-height: 480px; }
   .transport #tracking { display: none; }
-  .detail-target { transform: scale(.82); }
+  .product-target { transform: scale(.82); transform-origin: bottom; }
+  .product-cpu { left: 0; }
+  .product-ssd { right: 0; }
+  .product-gpu { right: 18%; }
+  .product-server { top: 86px; right: 0; transform-origin: top right; }
   .settings-panel { display: block; border-top: 1px solid var(--line); }
   footer { gap: 16px; text-align: center; line-height: 1.6; }
 }

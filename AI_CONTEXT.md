@@ -32,19 +32,19 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 05 — Expressões e atenção**
+**Protótipo 06 — Interação com objetos**
 
 Branch canônica:
 
 ```text
-feature/attention-engine
+feature/object-interaction-engine
 ```
 
 Commit de implementação:
 
 ```text
-efa16b244701e3ac228b4ae1daa0e899fb97a4c3
-feat: add attention and expression engine
+A confirmar após a publicação.
+feat: add object interaction engine
 ```
 
 ### 3.2 Histórico
@@ -59,6 +59,7 @@ feat: add attention and expression engine
 | Documentação | `docs/project-documentation` | `9af8344` |
 | Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
 | Protótipo 05 | `feature/attention-engine` | `efa16b2` |
+| Protótipo 06 | `feature/object-interaction-engine` | a confirmar |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -118,6 +119,16 @@ essa dupla proteção ao alterar o layout.
 O Byte atual é CSS pixel art. Não investir em refinamento visual neste ciclo.
 O objetivo é descobrir movimentos e estados que serão reaproveitados na arte
 definitiva.
+
+### 6.6 Objetos sempre recuperáveis
+
+`activeObject` guarda somente o produto que está sendo manipulado. Antes de
+qualquer troca de timeline, `resetActiveObject` cancela seus tweens, remove a
+transformação e limpa `data-held`.
+
+Não remova essa restauração. Ela garante que salto, caminhada, expressão ou
+uma segunda interação possam interromper o transporte sem deixar o produto
+flutuando ou preso ao Byte.
 
 ## 7. Erro histórico que não pode voltar
 
@@ -191,6 +202,28 @@ type Expression =
 type AttentionState = 'relaxed' | 'tracking' | Expression
 ```
 
+### Interação
+
+```typescript
+type InteractionState =
+  | 'idle'
+  | 'approaching'
+  | 'aligning'
+  | 'reaching'
+  | 'grabbing'
+  | 'carrying'
+  | 'presenting'
+  | 'releasing'
+  | 'out-of-reach'
+```
+
+Fluxo principal:
+
+```text
+approaching → aligning → reaching → grabbing → carrying
+→ presenting → releasing → idle
+```
+
 ## 9. API pública atual do motor
 
 | Método | Uso |
@@ -203,6 +236,8 @@ type AttentionState = 'relaxed' | 'tracking' | Expression
 | `releaseAttention()` | Retorna a atenção ao centro |
 | `setTracking(enabled)` | Ativa ou desativa rastreamento |
 | `express(expression, direction)` | Executa reação emocional |
+| `interact(element, targetX)` | Busca, pega, apresenta e devolve um objeto |
+| `inspectOutOfReach(direction)` | Executa tentativa simpática sem captura |
 | `playDemo()` | Executa sequência demonstrativa |
 | `togglePause()` | Pausa ou continua |
 | `restart()` | Reinicia a timeline |
@@ -219,7 +254,8 @@ type AttentionState = 'relaxed' | 'tracking' | Expression
 - seta para cima e `Shift + seta para cima`;
 - cursor para rastreamento de atenção;
 - botões de personalidade;
-- alvos CPU, SSD e GPU;
+- objetos CPU, SSD e GPU;
+- servidor alto fora de alcance;
 - espaço para pausa;
 - controle de progresso;
 - velocidade e escala;
@@ -254,6 +290,11 @@ Teste manual:
 15. cinco expressões;
 16. bloqueio do rastreamento durante ações;
 17. foco nos três alvos de detalhe.
+18. sequência completa nos objetos CPU, SSD e GPU;
+19. sincronização entre objeto e Byte durante transporte;
+20. devolução do produto após conclusão;
+21. devolução do produto ao interromper com outro comando;
+22. reação ao servidor fora de alcance.
 
 ## 12. Problemas e limitações conhecidas
 
@@ -267,8 +308,11 @@ Teste manual:
   clique permitem ambos os lados;
 - a demo não possui uma fila de estados generalizada;
 - salto e caminhada ainda não possuem física; são timelines determinísticas;
-- alvos CPU, SSD e GPU são marcadores provisórios, não produtos reais;
+- CPU, SSD, GPU e servidor são objetos CSS provisórios, não produtos reais;
 - expressões ainda usam a face CSS simplificada;
+- a mão não possui sistema de encaixe ou cinemática inversa; o alinhamento é
+  calibrado para o Byte provisório;
+- os objetos não possuem física nem colisão; seguem timelines determinísticas;
 - assets remanescentes do template Vite ainda podem ser limpos;
 - a integração Tray não foi iniciada.
 
@@ -284,28 +328,26 @@ Teste manual:
 
 ## 14. Próximo passo recomendado
 
-**Protótipo 06 — Interação com objetos**
+**Protótipo 07 — Máquina de estados, prioridade e fila**
 
 Escopo recomendado:
 
-- aproximar-se de um objeto;
-- alinhar corpo e direção;
-- estender o braço;
-- pegar, carregar e soltar;
-- apontar para um produto;
-- reagir quando o objeto está fora de alcance;
-- preservar atenção e personalidade durante a interação.
+- definir prioridade entre atenção, locomoção, salto, expressão e interação;
+- criar fila opcional para comandos compatíveis;
+- definir quais ações interrompem, aguardam ou são ignoradas;
+- expor um estado de alto nível único para a interface;
+- adicionar testes automatizados para transições e limpeza;
+- iniciar medição real de FPS e tempo de frame.
 
 Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 06: interação com objetos.
-2. Protótipo 07: máquina de estados, prioridade e fila.
-3. Testes automatizados e métricas reais.
-4. Spritesheet oficial.
-5. Avaliar PixiJS.
-6. Integração experimental com cópia do tema Tray.
+1. Protótipo 07: máquina de estados, prioridade e fila.
+2. Testes automatizados e métricas reais.
+3. Spritesheet oficial.
+4. Avaliar PixiJS.
+5. Integração experimental com cópia do tema Tray.
 
 ## 16. Regras para futuras IAs
 
@@ -385,3 +427,16 @@ Próximo passo:
 - **Validação:** TypeScript e build Vite aprovados.
 - **Limitação:** rosto e alvos ainda são provisórios.
 - **Próximo passo:** interação física simulada com objetos.
+
+### 2026-07-29 — Protótipo 06
+
+- **Branch:** `feature/object-interaction-engine`
+- **Commit:** a confirmar após a publicação.
+- **Objetivo:** permitir que o Byte interaja fisicamente com itens do palco.
+- **Mudanças:** aproximação, alinhamento, alcance, captura, transporte,
+  apresentação, devolução, restauração após interrupção e reação ao servidor
+  fora de alcance.
+- **Validação:** TypeScript, build Vite e `git diff --check` aprovados.
+- **Limitação:** braço e objeto usam alinhamento determinístico calibrado para
+  o protótipo CSS; ainda não existe cinemática inversa nem física.
+- **Próximo passo:** definir prioridade, fila e regras formais de interrupção.

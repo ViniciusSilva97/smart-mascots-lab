@@ -112,10 +112,10 @@ Cada comando deve exibir uma versão.
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/attention-engine
+git switch feature/object-interaction-engine
 ```
 
-O `git switch` escolhe a branch do Protótipo 05. Ela já contém os protótipos
+O `git switch` escolhe a branch do Protótipo 06. Ela já contém os protótipos
 anteriores e a documentação em seu histórico.
 
 ### 5.3 Instalar e iniciar
@@ -228,7 +228,7 @@ Esses três conceitos não são iguais.
 É uma ação reconhecida pela interface:
 
 ```typescript
-type Motion = 'idle' | 'walk' | 'point' | 'think' | 'celebrate'
+type Motion = 'idle' | 'walk' | 'jump' | 'point' | 'think' | 'celebrate'
 ```
 
 ### 9.2 Estado de locomoção
@@ -267,6 +267,21 @@ type Expression =
   | 'focused'
 
 type AttentionState = 'relaxed' | 'tracking' | Expression
+```
+
+Uma interação com produto possui seu próprio fluxo:
+
+```typescript
+type InteractionState =
+  | 'idle'
+  | 'approaching'
+  | 'aligning'
+  | 'reaching'
+  | 'grabbing'
+  | 'carrying'
+  | 'presenting'
+  | 'releasing'
+  | 'out-of-reach'
 ```
 
 ### 9.3 Pose
@@ -345,6 +360,47 @@ As expressões usam timelines curtas:
 
 Após uma expressão, o motor volta ao `idle`, preservando posição e direção.
 
+### 10.7 Interação com objetos
+
+Uma interação completa combina locomoção, atenção, manipulação de um elemento
+e retorno seguro:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Approaching
+    Approaching --> Aligning
+    Aligning --> Reaching
+    Reaching --> Grabbing
+    Grabbing --> Carrying
+    Carrying --> Presenting
+    Presenting --> Releasing
+    Releasing --> Idle
+```
+
+`main.ts` calcula a posição do produto em relação ao centro do palco e chama:
+
+```typescript
+engine.interact(productElement, targetX)
+```
+
+O motor escolhe um ponto de aproximação antes do objeto. Isso é importante:
+o destino da caminhada não é o centro do produto, mas uma posição que deixa
+espaço para o braço.
+
+Na captura, o item continua sendo o mesmo elemento DOM mostrado no pedestal.
+O GSAP move esse elemento até a mão, sincroniza seu deslocamento com o Byte,
+eleva-o durante a apresentação e o devolve à transformação original.
+
+O servidor alto usa uma ramificação curta:
+
+```typescript
+engine.inspectOutOfReach(direction)
+```
+
+O Byte olha para cima, tenta alcançar, percebe o limite e responde com uma
+expressão amigável. Essa falha intencional serve para testar personalidade,
+não apenas sucesso mecânico.
+
 ## 11. Construção da caminhada
 
 `createLocomotion` recebe:
@@ -399,10 +455,11 @@ Toda nova ação passa por `replaceTimeline`.
 A ordem correta é:
 
 1. matar a timeline antiga;
-2. limpar tweens e pose antiga;
-3. criar a nova timeline;
-4. aplicar velocidade e callbacks;
-5. iniciar.
+2. restaurar qualquer objeto que estava sendo carregado;
+3. limpar tweens e pose antiga;
+4. criar a nova timeline;
+5. aplicar velocidade e callbacks;
+6. iniciar.
 
 ### 12.1 Erro histórico importante
 
@@ -420,6 +477,10 @@ O motor não escreve diretamente nos painéis da página. Ele informa eventos:
 
 - `onMotionChange`;
 - `onLocomotionStateChange`;
+- `onJumpStateChange`;
+- `onAttentionStateChange`;
+- `onInteractionStateChange`;
+- `onExpressionChange`;
 - `onProgress`;
 - `onPlayStateChange`.
 
@@ -435,6 +496,7 @@ O CSS contém:
 - layout desktop, tablet e mobile;
 - construção visual provisória do Byte;
 - palco, grid e marcador de destino;
+- produtos provisórios, pedestais e estado visual de objeto carregado;
 - estados de foco e hover;
 - suporte a `prefers-reduced-motion`.
 
@@ -463,6 +525,10 @@ podem produzir saltos e resultados imprevisíveis.
 15. Teste cada botão de personalidade.
 16. Clique nos alvos CPU, SSD e GPU.
 17. Confirme que o rastreamento não interfere em caminhada ou salto.
+18. Confirme que cada produto é retirado do pedestal, apresentado e devolvido.
+19. Interrompa o transporte com caminhada, salto e expressão.
+20. Confirme que o produto interrompido retorna imediatamente ao pedestal.
+21. Clique no servidor alto e observe a tentativa sem captura.
 
 ### 15.2 Critérios de aprovação
 
@@ -477,6 +543,9 @@ podem produzir saltos e resultados imprevisíveis.
 - olhos, cabeça e antena acompanham o cursor em repouso;
 - expressões retornam suavemente ao estado atento;
 - ações corporais bloqueiam temporariamente o rastreamento;
+- objeto e personagem se deslocam juntos durante o transporte;
+- o produto retorna à posição original após conclusão ou interrupção;
+- a falha por falta de alcance comunica intenção sem agressividade;
 - um novo comando interrompe o anterior sem deixar membros deformados;
 - o build termina sem erros.
 
@@ -578,6 +647,7 @@ main
             └── docs/project-documentation
                 └── feature/jump-engine
                     └── feature/attention-engine
+                        └── feature/object-interaction-engine
 ```
 
 Não é necessário mesclar uma branch anterior para testar a seguinte: cada
@@ -607,7 +677,7 @@ branch nova foi criada a partir da anterior.
 - confirmação;
 - sincronização de cabeça, antena e fala.
 
-### Protótipo 06 — Objetos — próximo
+### Protótipo 06 — Objetos — concluído
 
 - aproximar-se;
 - pegar;
@@ -615,8 +685,9 @@ branch nova foi criada a partir da anterior.
 - soltar;
 - apontar para produto;
 - reagir ao objeto.
+- restaurar o objeto depois de uma interrupção.
 
-### Protótipo 07 — Máquina completa
+### Protótipo 07 — Máquina completa — próximo
 
 - prioridade de estados;
 - fila e interrupção de ações;
