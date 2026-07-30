@@ -8,12 +8,15 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 03 — Locomoção**
+**Protótipo 04 — Salto e aterrissagem**
 
 - animações coordenadas com GSAP;
 - estados de locomoção: `idle`, `preparing`, `walking` e `braking`;
 - caminhada para esquerda e direita;
 - corrida;
+- salto parado e salto longo;
+- fases de subida, ápice, queda, contato e recuperação;
+- salto seguro durante outro movimento;
 - destino escolhido por clique;
 - limites responsivos do palco;
 - movimentos complementares: apontar, pensar e comemorar;
@@ -30,7 +33,7 @@ Pré-requisitos:
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/locomotion-engine
+git switch feature/jump-engine
 npm install
 npm run dev
 ```
@@ -53,6 +56,8 @@ Abra o endereço mostrado pelo Vite, normalmente
 | Botões `1` a `5` | Escolhem um movimento |
 | `←` e `→` | Caminham na direção escolhida |
 | `Shift + ←` ou `Shift + →` | Correm |
+| `↑` | Salta no lugar |
+| `Shift + ↑` | Executa salto longo |
 | Clique no palco | Caminha até o destino |
 | `Shift + clique` | Corre até o destino |
 | `Espaço` | Pausa ou continua a timeline |
@@ -70,6 +75,8 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `feature/lab-foundation` | Protótipo 01: laboratório visual |
 | `feature/gsap-motion-engine` | Protótipo 02: motor GSAP |
 | `feature/locomotion-engine` | Protótipo 03: locomoção por destino |
+| `docs/project-documentation` | Guia técnico e contexto para IA |
+| `feature/jump-engine` | Protótipo 04: salto e aterrissagem |
 
 As branches anteriores são preservadas como marcos de comparação. Não faça
 merge na `main` enquanto o laboratório ainda estiver em experimentação.
@@ -77,4 +84,3 @@ merge na `main` enquanto o laboratório ainda estiver em experimentação.
 ## Licença
 
 Código publicado sob a [Licença MIT](LICENSE).
-

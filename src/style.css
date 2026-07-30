@@ -132,6 +132,13 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); }
 }
 .locomotion-buttons button:hover { border-color: var(--yellow); background: rgba(245, 223, 32, .08); }
 .locomotion-buttons small { display: block; margin-top: 7px; color: #8b9490; font: 5px 'Press Start 2P'; }
+.jump-buttons { display: grid; grid-template-columns: 1fr 1.45fr; gap: 6px; margin-top: 6px; }
+.jump-buttons button {
+  min-width: 0; padding: 10px 3px; border: 1px solid #3b433f; background: #171b1a;
+  color: var(--green); cursor: pointer; font: 11px 'Press Start 2P';
+}
+.jump-buttons button:hover { border-color: var(--green); background: rgba(121, 242, 68, .08); }
+.jump-buttons small { display: block; margin-top: 7px; color: #8b9490; font: 5px 'Press Start 2P'; }
 .click-tip { color: #68716d; font-size: 9px; line-height: 1.5; margin: 13px 0 0; }
 .click-tip strong { color: var(--green); }
 .background-options { display: flex; gap: 9px; margin-top: 16px; }

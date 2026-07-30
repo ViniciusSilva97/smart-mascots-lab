@@ -1,11 +1,17 @@
 import './style.css'
-import { ByteMotionEngine, type LocomotionState, type Motion } from './motion-engine'
+import {
+  ByteMotionEngine,
+  type JumpState,
+  type LocomotionState,
+  type Motion,
+} from './motion-engine'
 
 const root = document.documentElement
 
 const motions: Array<{ id: Motion; label: string; icon: string }> = [
   { id: 'idle', label: 'Parado', icon: '●' },
   { id: 'walk', label: 'Caminhar', icon: '▶' },
+  { id: 'jump', label: 'Saltar', icon: '↑' },
   { id: 'point', label: 'Apontar', icon: '☞' },
   { id: 'think', label: 'Pensar', icon: '?' },
   { id: 'celebrate', label: 'Comemorar', icon: '★' },
@@ -25,7 +31,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 03 • LOCOMOÇÃO</p>
+      <p class="eyebrow">// PROTÓTIPO 04 • SALTO</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -93,6 +99,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <button id="run" type="button">⇧<small>CORRER</small></button>
           <button id="walk-right" type="button">→<small>ANDAR</small></button>
         </div>
+        <div class="jump-buttons">
+          <button id="jump" type="button">↑<small>SALTAR</small></button>
+          <button id="long-jump" type="button">⇧↑<small>SALTO LONGO</small></button>
+        </div>
         <p class="click-tip">Clique no palco para escolher o destino. Use <strong>Shift</strong> para correr.</p>
         <div class="separator"></div>
         <span class="panel-label">AMBIENTE</span>
@@ -133,9 +143,20 @@ const locomotionLabels: Record<LocomotionState, string> = {
   braking: 'FREANDO',
 }
 
+const jumpLabels: Record<JumpState, string> = {
+  grounded: 'NO CHÃO',
+  anticipating: 'PREPARANDO SALTO',
+  ascending: 'SUBINDO',
+  apex: 'ÁPICE',
+  falling: 'CAINDO',
+  landing: 'ATERRISSANDO',
+  recovering: 'RECUPERANDO',
+}
+
 const speechByMotion: Record<Motion, string> = {
   idle: 'Olá! Eu sou o Byte.',
   walk: 'Vamos explorar a loja?',
+  jump: 'Ativando propulsores!',
   point: 'Olha esta oferta!',
   think: 'Qual upgrade combina com você?',
   celebrate: 'Compra concluída!',
@@ -152,6 +173,9 @@ const engine = new ByteMotionEngine(byte, {
   },
   onLocomotionStateChange(locomotionState) {
     state.textContent = locomotionLabels[locomotionState]
+  },
+  onJumpStateChange(jumpState) {
+    if (jumpState !== 'grounded') state.textContent = jumpLabels[jumpState]
   },
   onProgress(value) {
     const percent = Math.round(value * 100)
@@ -172,6 +196,7 @@ document.querySelectorAll<HTMLButtonElement>('.motion-button').forEach(button =>
   button.addEventListener('click', () => {
     const motion = button.dataset.motion as Motion
     if (motion === 'walk') engine.walk(1)
+    else if (motion === 'jump') engine.jump()
     else engine.play(motion)
   })
 })
@@ -209,6 +234,8 @@ progress.addEventListener('input', () => engine.setProgress(Number(progress.valu
 document.querySelector<HTMLButtonElement>('#walk-left')!.addEventListener('click', () => engine.walk(-1))
 document.querySelector<HTMLButtonElement>('#walk-right')!.addEventListener('click', () => engine.walk(1))
 document.querySelector<HTMLButtonElement>('#run')!.addEventListener('click', () => engine.walk(1, true))
+document.querySelector<HTMLButtonElement>('#jump')!.addEventListener('click', () => engine.jump())
+document.querySelector<HTMLButtonElement>('#long-jump')!.addEventListener('click', () => engine.jump(true))
 
 stage.addEventListener('click', event => {
   const rect = stage.getBoundingClientRect()
@@ -236,5 +263,9 @@ window.addEventListener('keydown', event => {
   if (event.key === 'ArrowRight') {
     event.preventDefault()
     engine.walk(1, event.shiftKey)
+  }
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    engine.jump(event.shiftKey)
   }
 })

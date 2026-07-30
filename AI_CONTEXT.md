@@ -32,19 +32,19 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 03 — Locomoção**
+**Protótipo 04 — Salto e aterrissagem**
 
 Branch canônica:
 
 ```text
-feature/locomotion-engine
+feature/jump-engine
 ```
 
 Commit de implementação:
 
 ```text
-3cb087525f466a8ed103e5019bed925954c3da66
-feat: add destination-based locomotion
+A REGISTRAR APÓS A PUBLICAÇÃO
+feat: add jump and landing states
 ```
 
 ### 3.2 Histórico
@@ -56,6 +56,8 @@ feat: add destination-based locomotion
 | Protótipo 02 | `feature/gsap-motion-engine` | `5b411d2` |
 | Correção GSAP | `feature/gsap-motion-engine` | `b72d251` |
 | Protótipo 03 | `feature/locomotion-engine` | `3cb0875` |
+| Documentação | `docs/project-documentation` | `9af8344` |
+| Protótipo 04 | `feature/jump-engine` | A registrar |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -143,7 +145,7 @@ A função fábrica só cria a nova timeline depois da limpeza.
 ### Movimento de alto nível
 
 ```typescript
-type Motion = 'idle' | 'walk' | 'point' | 'think' | 'celebrate'
+type Motion = 'idle' | 'walk' | 'jump' | 'point' | 'think' | 'celebrate'
 ```
 
 ### Locomoção
@@ -162,6 +164,19 @@ Fluxo:
 idle → preparing → walking → braking → idle
 ```
 
+### Salto
+
+```typescript
+type JumpState =
+  | 'grounded'
+  | 'anticipating'
+  | 'ascending'
+  | 'apex'
+  | 'falling'
+  | 'landing'
+  | 'recovering'
+```
+
 ## 9. API pública atual do motor
 
 | Método | Uso |
@@ -169,6 +184,7 @@ idle → preparing → walking → braking → idle
 | `play(motion)` | Executa um gesto ou redireciona `walk` |
 | `walk(direction, running)` | Caminha uma distância padrão |
 | `walkTo(targetX, running)` | Caminha até um destino |
+| `jump(longJump)` | Executa salto parado ou salto longo |
 | `playDemo()` | Executa sequência demonstrativa |
 | `togglePause()` | Pausa ou continua |
 | `restart()` | Reinicia a timeline |
@@ -182,6 +198,7 @@ idle → preparing → walking → braking → idle
 - botões de caminhada;
 - clique e `Shift + clique`;
 - setas e `Shift + setas`;
+- seta para cima e `Shift + seta para cima`;
 - espaço para pausa;
 - controle de progresso;
 - velocidade e escala;
@@ -209,6 +226,9 @@ Teste manual:
 8. redimensionamento;
 9. mobile;
 10. retorno ao estado `idle`.
+11. salto parado;
+12. salto longo;
+13. interrupção da caminhada por salto sem retorno de posição.
 
 ## 12. Problemas e limitações conhecidas
 
@@ -221,6 +241,7 @@ Teste manual:
 - corrida possui botão direto prioritariamente para a direita; teclado e
   clique permitem ambos os lados;
 - a demo não possui uma fila de estados generalizada;
+- salto e caminhada ainda não possuem física; são timelines determinísticas;
 - assets remanescentes do template Vite ainda podem ser limpos;
 - a integração Tray não foi iniciada.
 
@@ -234,37 +255,31 @@ Teste manual:
 - personagens e assets devem ser originais e sem licença duvidosa;
 - não depender de mascotes oficiais de marketplaces.
 
-## 14. Próximo passo aprovado conceitualmente
+## 14. Próximo passo recomendado
 
-**Protótipo 04 — Salto e aterrissagem**
+**Protótipo 05 — Expressões e atenção**
 
 Escopo recomendado:
 
-- `jump-start`;
-- impulso;
-- subida;
-- ápice;
-- queda;
-- contato;
-- absorção;
-- recuperação;
-- salto parado;
-- salto durante corrida;
-- interrupções seguras;
-- limites verticais.
+- direção do olhar;
+- piscadas com intervalos menos previsíveis;
+- inclinação contextual da cabeça;
+- reações da antena;
+- surpresa, curiosidade e confirmação;
+- foco em produtos e elementos da interface;
+- transições entre expressão e locomoção.
 
 Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 04: salto.
-2. Protótipo 05: olhos, cabeça, antena e expressões.
-3. Protótipo 06: interação com objetos.
-4. Protótipo 07: máquina de estados, prioridade e fila.
-5. Testes automatizados e métricas reais.
-6. Spritesheet oficial.
-7. Avaliar PixiJS.
-8. Integração experimental com cópia do tema Tray.
+1. Protótipo 05: olhos, cabeça, antena e expressões.
+2. Protótipo 06: interação com objetos.
+3. Protótipo 07: máquina de estados, prioridade e fila.
+4. Testes automatizados e métricas reais.
+5. Spritesheet oficial.
+6. Avaliar PixiJS.
+7. Integração experimental com cópia do tema Tray.
 
 ## 16. Regras para futuras IAs
 
@@ -323,3 +338,13 @@ Próximo passo:
 - **Limitação:** movimento ainda usa personagem CSS provisório.
 - **Próximo passo:** documentar o projeto e depois evoluir para salto.
 
+### 2026-07-29 — Protótipo 04
+
+- **Branch:** `feature/jump-engine`
+- **Commit:** a registrar após a publicação.
+- **Objetivo:** criar salto parado, salto longo e aterrissagem convincente.
+- **Mudanças:** sete estados verticais, arco horizontal, controles de teclado
+  e sincronização da posição renderizada antes de interrupções.
+- **Validação:** TypeScript e build Vite aprovados.
+- **Limitação:** movimento determinístico, sem física real.
+- **Próximo passo:** expressões, olhar, cabeça e antena.

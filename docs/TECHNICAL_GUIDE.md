@@ -112,11 +112,11 @@ Cada comando deve exibir uma versão.
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/locomotion-engine
+git switch feature/jump-engine
 ```
 
-O `git switch` escolhe a branch do Protótipo 03. Ela já contém os Protótipos
-01 e 02 em seu histórico.
+O `git switch` escolhe a branch do Protótipo 04. Ela já contém os protótipos
+anteriores e a documentação em seu histórico.
 
 ### 5.3 Instalar e iniciar
 
@@ -243,6 +243,19 @@ type LocomotionState =
   | 'braking'
 ```
 
+O salto possui fases próprias:
+
+```typescript
+type JumpState =
+  | 'grounded'
+  | 'anticipating'
+  | 'ascending'
+  | 'apex'
+  | 'falling'
+  | 'landing'
+  | 'recovering'
+```
+
 ### 9.3 Pose
 
 É o conjunto instantâneo de transformações: rotação dos braços, altura do
@@ -282,6 +295,24 @@ A duração depende da distância.
 O Byte ultrapassa levemente o destino, retorna e absorve a parada. Essa
 pequena compensação evita uma interrupção artificial.
 
+### 10.5 Estados do salto
+
+```mermaid
+stateDiagram-v2
+    [*] --> Grounded
+    Grounded --> Anticipating: jump
+    Anticipating --> Ascending: impulso
+    Ascending --> Apex: altura máxima
+    Apex --> Falling: gravidade
+    Falling --> Landing: contato
+    Landing --> Recovering: absorção
+    Recovering --> Grounded: equilíbrio
+```
+
+O salto usa antecipação antes do impulso, alongamento na subida, breve
+desaceleração no ápice, aceleração na queda e compressão durante o contato.
+O salto longo coordena o arco vertical com deslocamento horizontal.
+
 ## 11. Construção da caminhada
 
 `createLocomotion` recebe:
@@ -315,6 +346,19 @@ Durante o deslocamento:
 - `wrap` muda de posição.
 
 Os marcadores relativos do GSAP, como `"<"`, iniciam ações em paralelo.
+
+### 11.4 Interrupção segura e salto
+
+Antes de substituir uma timeline, `syncRenderedPosition` lê a posição
+horizontal que está realmente renderizada. Isso permite interromper uma
+caminhada e saltar a partir do ponto atual.
+
+Sem essa sincronização, `positionX` ainda conteria apenas o último destino
+concluído e o Byte voltaria visualmente para trás.
+
+`createJump` mantém o movimento vertical no elemento `byte` e o deslocamento
+horizontal no elemento `wrap`. Essa separação facilita ajustar altura e
+distância de forma independente.
 
 ## 12. Substituição segura de timelines
 
@@ -380,6 +424,9 @@ podem produzir saltos e resultados imprevisíveis.
 8. Altere a velocidade.
 9. Redimensione a janela.
 10. Acione apontar, pensar e comemorar depois de caminhar.
+11. Pressione `↑` para saltar.
+12. Pressione `Shift + ↑` para executar um salto longo.
+13. Inicie uma caminhada e interrompa com um salto.
 
 ### 15.2 Critérios de aprovação
 
@@ -389,6 +436,8 @@ podem produzir saltos e resultados imprevisíveis.
 - não teletransporta entre estados;
 - a pausa congela a pose atual;
 - o retorno preserva o destino;
+- o salto iniciado durante caminhada parte da posição renderizada;
+- a aterrissagem passa por contato e recuperação;
 - um novo comando interrompe o anterior sem deixar membros deformados;
 - o build termina sem erros.
 
@@ -487,6 +536,8 @@ main
 └── feature/lab-foundation
     └── feature/gsap-motion-engine
         └── feature/locomotion-engine
+            └── docs/project-documentation
+                └── feature/jump-engine
 ```
 
 Não é necessário mesclar uma branch anterior para testar a seguinte: cada
@@ -494,7 +545,7 @@ branch nova foi criada a partir da anterior.
 
 ## 20. Roadmap técnico
 
-### Protótipo 04 — Salto
+### Protótipo 04 — Salto — concluído
 
 - antecipação;
 - impulso;
@@ -503,8 +554,11 @@ branch nova foi criada a partir da anterior.
 - queda;
 - aterrissagem;
 - recuperação.
+- salto parado;
+- salto longo;
+- sincronização da posição durante interrupções.
 
-### Protótipo 05 — Expressões
+### Protótipo 05 — Expressões — próximo
 
 - direção do olhar;
 - piscadas naturais;
@@ -563,4 +617,3 @@ branch nova foi criada a partir da anterior.
 | DOM | Estrutura de elementos da página |
 | Canvas | Superfície gráfica controlada por código |
 | Handoff | Contexto entregue para continuidade do trabalho |
-
