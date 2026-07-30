@@ -8,8 +8,13 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 08 — Desempenho e acessibilidade**
+**Protótipo 09 — Robustez e testes de integração — etapa 1**
 
+- testes reais no Chromium com Playwright;
+- seis cenários executados em perfis desktop e mobile;
+- detecção automática de exceções JavaScript durante a inicialização;
+- validação de telemetria, prioridade, interrupção e movimento reduzido;
+- workflow GitHub Actions para executar o navegador em ambiente reproduzível;
 - animações coordenadas com GSAP;
 - medição real de FPS pelo `requestAnimationFrame`;
 - detecção automática de meta de 60 ou 120 Hz;
@@ -21,7 +26,7 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 - modo automático respeita `prefers-reduced-motion`;
 - modo reduzido remove saltos, transporte e deslocamentos animados extensos;
 - telemetria inteiramente local, sem backend ou envio de dados;
-- 12 testes automatizados aprovados;
+- 13 testes unitários aprovados;
 - orquestrador independente para prioridade, fila e interrupção;
 - painel em tempo real com ação ativa, decisão e comandos aguardando;
 - interações e demonstração protegidas como sequências atômicas;
@@ -63,7 +68,7 @@ Pré-requisitos:
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/performance-accessibility
+git switch feature/robustness-integration-tests
 npm install
 npm run dev
 ```
@@ -77,7 +82,11 @@ Abra o endereço mostrado pelo Vite, normalmente
 |---|---|
 | `npm run dev` | Inicia o ambiente de desenvolvimento |
 | `npm run build` | Valida o TypeScript e gera o build |
-| `npm test` | Executa os testes automatizados |
+| `npm test` | Executa os 13 testes unitários com Vitest |
+| `npx playwright install chromium` | Instala o navegador usado nos testes |
+| `npm run test:browser` | Gera o build e executa seis cenários no Chromium |
+| `npm run test:browser:headed` | Executa os testes mostrando o navegador |
+| `npm run test:all` | Executa testes unitários e de navegador |
 | `npm run preview` | Visualiza localmente o build de produção |
 
 ## Controles do laboratório
@@ -121,6 +130,7 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `feature/object-interaction-engine` | Protótipo 06: interação com objetos |
 | `feature/state-orchestrator` | Protótipo 07: prioridade, fila e interrupção |
 | `feature/performance-accessibility` | Protótipo 08: telemetria e movimento reduzido |
+| `feature/robustness-integration-tests` | Protótipo 09: testes reais desktop e mobile |
 
 As branches anteriores são preservadas como marcos de comparação. Não faça
 merge na `main` enquanto o laboratório ainda estiver em experimentação.
