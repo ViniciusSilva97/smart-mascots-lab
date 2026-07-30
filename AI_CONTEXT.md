@@ -43,7 +43,7 @@ feature/state-orchestrator
 Commit de implementação:
 
 ```text
-A confirmar após a publicação.
+4bfd05f9552a9196ecbb49f14ed8e61123e35090
 feat: add state orchestrator
 ```
 
@@ -60,7 +60,7 @@ feat: add state orchestrator
 | Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
 | Protótipo 05 | `feature/attention-engine` | `efa16b2` |
 | Protótipo 06 | `feature/object-interaction-engine` | `6fb2e8f` |
-| Protótipo 07 | `feature/state-orchestrator` | a confirmar |
+| Protótipo 07 | `feature/state-orchestrator` | `4bfd05f` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -509,7 +509,7 @@ Próximo passo:
 ### 2026-07-29 — Protótipo 07
 
 - **Branch:** `feature/state-orchestrator`
-- **Commit:** a confirmar após a publicação.
+- **Commit:** `4bfd05f9552a9196ecbb49f14ed8e61123e35090`.
 - **Objetivo:** centralizar prioridade, fila e política de interrupção.
 - **Mudanças:** orquestrador puro, sete categorias de comando, ações atômicas,
   fila limitada e ordenada, substituição de pendências repetidas, painel de
