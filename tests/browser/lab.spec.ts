@@ -1,0 +1,68 @@
+import { expect, test, type Page } from '@playwright/test'
+
+const trackRuntimeErrors = (page: Page) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  return errors
+}
+
+const openLab = async (page: Page) => {
+  await page.goto('/')
+  await expect(page.locator('.lab-status')).toHaveText('LAB ONLINE')
+}
+
+test('inicializa sem exceções e atualiza a telemetria', async ({ page }) => {
+  const runtimeErrors = trackRuntimeErrors(page)
+
+  await openLab(page)
+
+  await expect(page.locator('#visibility-state')).toHaveText('ATIVA')
+  await expect(page.locator('#fps-value')).not.toHaveText('--', {
+    timeout: 5_000,
+  })
+  expect(runtimeErrors).toEqual([])
+})
+
+test('registra, prioriza e interrompe comandos reais', async ({ page }) => {
+  const runtimeErrors = trackRuntimeErrors(page)
+
+  await openLab(page)
+  await page.locator('#motion-mode').selectOption('full')
+  await page.locator('#speed').fill('0.5')
+
+  await page.locator('[data-motion="point"]').click()
+  await expect(page.locator('#command-active')).toHaveText('APONTAR')
+  await expect(page.locator('#command-decision')).toHaveText('INICIADO')
+  await expect(page.locator('#byte')).toHaveAttribute('data-motion', 'point')
+
+  await page.locator('#jump').click()
+  await expect(page.locator('#command-active')).toHaveText('SALTAR')
+  await expect(page.locator('#command-decision')).toHaveText('INTERROMPEU')
+  await expect(page.locator('#byte')).toHaveAttribute('data-motion', 'jump')
+
+  await page.locator('#stop-all').click()
+  await expect(page.locator('#command-active')).toHaveText('RESPIRANDO')
+  await expect(page.locator('#command-decision')).toHaveText('REINICIADO')
+  await expect(page.locator('#byte')).toHaveAttribute('data-motion', 'idle')
+  expect(runtimeErrors).toEqual([])
+})
+
+test('mantém os comandos funcionais no modo reduzido', async ({ page }) => {
+  const runtimeErrors = trackRuntimeErrors(page)
+
+  await openLab(page)
+  await page.locator('#motion-mode').selectOption('reduced')
+  await expect(page.locator('#motion-mode-note')).toHaveText(
+    'MODO REDUZIDO MANUAL',
+  )
+
+  const before = await page.locator('#byte-wrap').boundingBox()
+  await page.locator('#walk-right').click()
+  await expect(page.locator('#byte')).toHaveAttribute('data-motion', 'idle')
+  const after = await page.locator('#byte-wrap').boundingBox()
+
+  expect(before).not.toBeNull()
+  expect(after).not.toBeNull()
+  expect(Math.abs(after!.x - before!.x)).toBeGreaterThan(50)
+  expect(runtimeErrors).toEqual([])
+})
