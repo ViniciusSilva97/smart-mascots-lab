@@ -1,10 +1,45 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   calculateFrameMetrics,
   detectTargetFps,
+  FramePerformanceMonitor,
 } from './performance-monitor'
 
 describe('performance monitor', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('preserva o contexto do navegador ao agendar e cancelar frames', () => {
+    let browser: object
+    const requestFrame = vi.fn(function (
+      this: unknown,
+      _callback: FrameRequestCallback,
+    ) {
+      if (this !== browser) throw new TypeError('Illegal invocation')
+      return 42
+    })
+    const cancelFrame = vi.fn(function (this: unknown, _handle: number) {
+      if (this !== browser) throw new TypeError('Illegal invocation')
+    })
+    browser = {
+      requestAnimationFrame: requestFrame,
+      cancelAnimationFrame: cancelFrame,
+    }
+
+    vi.stubGlobal('window', browser)
+    vi.stubGlobal('requestAnimationFrame', requestFrame)
+    vi.stubGlobal('cancelAnimationFrame', cancelFrame)
+
+    const monitor = new FramePerformanceMonitor(vi.fn())
+
+    expect(() => monitor.start()).not.toThrow()
+    monitor.stop()
+
+    expect(requestFrame).toHaveBeenCalledOnce()
+    expect(cancelFrame).toHaveBeenCalledWith(42)
+  })
+
   it('detecta uma tela próxima de 60 Hz', () => {
     expect(detectTargetFps(Array(40).fill(16.67))).toBe(60)
   })
