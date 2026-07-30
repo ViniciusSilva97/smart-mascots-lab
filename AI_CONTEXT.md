@@ -43,7 +43,7 @@ feature/attention-engine
 Commit de implementação:
 
 ```text
-A REGISTRAR APÓS A PUBLICAÇÃO
+efa16b244701e3ac228b4ae1daa0e899fb97a4c3
 feat: add attention and expression engine
 ```
 
@@ -58,7 +58,7 @@ feat: add attention and expression engine
 | Protótipo 03 | `feature/locomotion-engine` | `3cb0875` |
 | Documentação | `docs/project-documentation` | `9af8344` |
 | Protótipo 04 | `feature/jump-engine` | `e13a7d1` |
-| Protótipo 05 | `feature/attention-engine` | A registrar |
+| Protótipo 05 | `feature/attention-engine` | `efa16b2` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -378,7 +378,7 @@ Próximo passo:
 ### 2026-07-29 — Protótipo 05
 
 - **Branch:** `feature/attention-engine`
-- **Commit:** a registrar após a publicação.
+- **Commit:** `efa16b244701e3ac228b4ae1daa0e899fb97a4c3`.
 - **Objetivo:** tornar o Byte simpático, atento e responsivo aos detalhes.
 - **Mudanças:** rastreamento do cursor, piscadas variáveis, cinco expressões,
   bloqueio durante ações e alvos contextuais CPU, SSD e GPU.
