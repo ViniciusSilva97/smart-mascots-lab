@@ -14,6 +14,11 @@ import {
   type MascotCommand,
   type OrchestratorSnapshot,
 } from './state-orchestrator'
+import {
+  FramePerformanceMonitor,
+  type FrameMetrics,
+  type PerformanceQuality,
+} from './performance-monitor'
 
 const root = document.documentElement
 
@@ -48,7 +53,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
   <main>
     <section class="intro">
-      <p class="eyebrow">// PROTÓTIPO 07 • ORQUESTRAÇÃO</p>
+      <p class="eyebrow">// PROTÓTIPO 08 • PERFORMANCE</p>
       <h1>Personagens que dão<br><em>vida à marca.</em></h1>
       <p>Teste movimentos, escala e velocidade antes de levar os mascotes para a Smart Eletro Vini.</p>
     </section>
@@ -167,6 +172,15 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           </div>
         </div>
         <div class="separator"></div>
+        <span class="panel-label">ACESSIBILIDADE</span>
+        <label for="motion-mode">MOVIMENTO</label>
+        <select id="motion-mode" aria-label="Preferência de movimento">
+          <option value="auto">AUTOMÁTICO</option>
+          <option value="full">COMPLETO</option>
+          <option value="reduced">REDUZIDO</option>
+        </select>
+        <p class="motion-mode-note" id="motion-mode-note">SEGUINDO O SISTEMA</p>
+        <div class="separator"></div>
         <span class="panel-label">AMBIENTE</span>
         <div class="background-options">
           <button class="bg-option active" data-bg="dark" aria-label="Fundo escuro"></button>
@@ -174,9 +188,24 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <button class="bg-option" data-bg="green" aria-label="Fundo verde"></button>
         </div>
         <div class="separator"></div>
+        <span class="panel-label">TELEMETRIA</span>
+        <div class="performance-panel" id="performance-panel" data-quality="calibrating">
+          <div class="performance-head">
+            <span>QUALIDADE</span>
+            <strong id="performance-quality">CALIBRANDO</strong>
+          </div>
+          <div class="metric-grid">
+            <div><span>FPS</span><strong id="fps-value">--</strong></div>
+            <div><span>META</span><strong id="fps-target">--</strong></div>
+            <div><span>FRAME</span><strong id="frame-time">--</strong></div>
+            <div><span>P95</span><strong id="frame-p95">--</strong></div>
+            <div><span>QUEDAS</span><strong id="dropped-frames">0</strong></div>
+            <div><span>ABA</span><strong id="visibility-state">ATIVA</strong></div>
+          </div>
+        </div>
+        <div class="separator"></div>
         <dl>
           <div><dt>ESTADO</dt><dd id="state">IDLE</dd></div>
-          <div><dt>FPS</dt><dd>60</dd></div>
           <div><dt>MODO</dt><dd>GSAP</dd></div>
         </dl>
       </aside>
@@ -201,6 +230,16 @@ const commandActive = document.querySelector<HTMLElement>('#command-active')!
 const commandDecision = document.querySelector<HTMLElement>('#command-decision')!
 const commandQueue = document.querySelector<HTMLOListElement>('#command-queue')!
 const queueCount = document.querySelector<HTMLElement>('#queue-count')!
+const motionMode = document.querySelector<HTMLSelectElement>('#motion-mode')!
+const motionModeNote = document.querySelector<HTMLElement>('#motion-mode-note')!
+const performancePanel = document.querySelector<HTMLElement>('#performance-panel')!
+const performanceQuality = document.querySelector<HTMLElement>('#performance-quality')!
+const fpsValue = document.querySelector<HTMLElement>('#fps-value')!
+const fpsTarget = document.querySelector<HTMLElement>('#fps-target')!
+const frameTime = document.querySelector<HTMLElement>('#frame-time')!
+const frameP95 = document.querySelector<HTMLElement>('#frame-p95')!
+const droppedFrames = document.querySelector<HTMLElement>('#dropped-frames')!
+const visibilityState = document.querySelector<HTMLElement>('#visibility-state')!
 
 const locomotionLabels: Record<LocomotionState, string> = {
   idle: 'IDLE',
@@ -258,6 +297,23 @@ const decisionLabels: Record<CommandDecision, string> = {
   'queue-full': 'FILA CHEIA',
   reset: 'REINICIADO',
   completed: 'CONCLUÍDO',
+}
+
+const qualityLabels: Record<PerformanceQuality, string> = {
+  excellent: 'EXCELENTE',
+  stable: 'ESTÁVEL',
+  warning: 'ATENÇÃO',
+  critical: 'CRÍTICO',
+}
+
+const renderPerformance = (metrics: FrameMetrics) => {
+  performancePanel.dataset.quality = metrics.quality
+  performanceQuality.textContent = qualityLabels[metrics.quality]
+  fpsValue.textContent = String(metrics.fps)
+  fpsTarget.textContent = `${metrics.targetFps} HZ`
+  frameTime.textContent = `${metrics.averageFrameTime} MS`
+  frameP95.textContent = `${metrics.p95FrameTime} MS`
+  droppedFrames.textContent = String(metrics.droppedFrames)
 }
 
 const renderOrchestrator = (snapshot: OrchestratorSnapshot) => {
@@ -321,6 +377,7 @@ const engine = new ByteMotionEngine(byte, {
 })
 
 orchestrator = new CommandOrchestrator(renderOrchestrator)
+const performanceMonitor = new FramePerformanceMonitor(renderPerformance)
 
 let commandSequence = 0
 const command = (
@@ -386,6 +443,56 @@ const dispatchJump = (longJump = false) => {
     execute: () => engine.jump(longJump),
   }))
 }
+
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+let appliedReducedMotion: boolean | null = null
+
+const applyMotionPreference = () => {
+  const reduced = motionMode.value === 'reduced'
+    || (motionMode.value === 'auto' && reducedMotionQuery.matches)
+
+  motionModeNote.textContent = motionMode.value === 'auto'
+    ? reduced
+      ? 'SISTEMA: MOVIMENTO REDUZIDO'
+      : 'SISTEMA: MOVIMENTO COMPLETO'
+    : reduced
+      ? 'MODO REDUZIDO MANUAL'
+      : 'MODO COMPLETO MANUAL'
+
+  root.dataset.motionMode = reduced ? 'reduced' : 'full'
+  if (appliedReducedMotion === reduced) return
+  appliedReducedMotion = reduced
+
+  orchestrator.dispatch(command({
+    kind: 'reset',
+    label: reduced ? 'Movimento reduzido' : 'Movimento completo',
+    priority: 100,
+    execute: () => engine.setReducedMotion(reduced),
+  }))
+}
+
+motionMode.addEventListener('change', applyMotionPreference)
+reducedMotionQuery.addEventListener('change', () => {
+  if (motionMode.value === 'auto') applyMotionPreference()
+})
+applyMotionPreference()
+
+const updateVisibility = () => {
+  const visible = document.visibilityState === 'visible'
+  visibilityState.textContent = visible ? 'ATIVA' : 'PAUSADA'
+  visibilityState.dataset.visible = String(visible)
+  engine.setPageVisible(visible)
+
+  if (visible) {
+    performanceMonitor.reset()
+    performanceMonitor.start()
+  } else {
+    performanceMonitor.stop()
+  }
+}
+
+document.addEventListener('visibilitychange', updateVisibility)
+updateVisibility()
 
 const updateStageBounds = () => engine.setBounds(stage.clientWidth / 2 - 70)
 updateStageBounds()

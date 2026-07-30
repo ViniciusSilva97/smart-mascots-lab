@@ -32,19 +32,19 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 07 — Orquestração de estados**
+**Protótipo 09 — Robustez e testes de integração**
 
 Branch canônica:
 
 ```text
-feature/state-orchestrator
+feature/performance-accessibility
 ```
 
 Commit de implementação:
 
 ```text
-4bfd05f9552a9196ecbb49f14ed8e61123e35090
-feat: add state orchestrator
+A confirmar após a publicação.
+feat: add performance and accessibility
 ```
 
 ### 3.2 Histórico
@@ -61,6 +61,7 @@ feat: add state orchestrator
 | Protótipo 05 | `feature/attention-engine` | `efa16b2` |
 | Protótipo 06 | `feature/object-interaction-engine` | `6fb2e8f` |
 | Protótipo 07 | `feature/state-orchestrator` | `4bfd05f` |
+| Protótipo 08 | `feature/performance-accessibility` | a confirmar |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -82,6 +83,8 @@ Não adicionar React, Vue, Phaser, PixiJS ou Rive sem uma decisão explícita.
 |---|---|
 | `src/main.ts` | interface, eventos, controles e adaptação do palco |
 | `src/motion-engine.ts` | timelines, estado e posição do Byte |
+| `src/performance-monitor.ts` | métricas de frame e classificação |
+| `src/performance-monitor.test.ts` | testes de 60/120 Hz e quedas |
 | `src/state-orchestrator.ts` | prioridade, fila e política de interrupção |
 | `src/state-orchestrator.test.ts` | testes unitários da orquestração |
 | `src/style.css` | identidade, layout, Byte provisório e responsividade |
@@ -152,6 +155,23 @@ Política canônica:
 
 Não voltar a chamar métodos de movimento diretamente nos eventos de
 `main.ts`. Novas ações corporais devem passar pelo orquestrador.
+
+### 6.8 Pausas por motivo
+
+O motor usa `pauseReasons` em vez de um único booleano. Os motivos atuais são
+`user` e `visibility`. Uma timeline só retoma quando o conjunto fica vazio.
+
+Essa regra impede que uma animação pausada manualmente volte a rodar apenas
+porque o usuário retornou à aba.
+
+### 6.9 Telemetria local
+
+`FramePerformanceMonitor` não deve depender do motor nem enviar dados. Ele
+mede `requestAnimationFrame`, ignora intervalos acima de 250 ms, conserva até
+120 amostras e emite a cada 500 ms.
+
+A meta é 120 FPS quando a mediana indica pelo menos 90 Hz; nos demais casos,
+60 FPS. Quedas são intervalos acima de 1,5 vez o orçamento do frame.
 
 ## 7. Erro histórico que não pode voltar
 
@@ -287,6 +307,8 @@ started | interrupted | queued | replaced-in-queue
 | `setProgress(progress)` | Posiciona a timeline |
 | `setSpeed(speed)` | Ajusta `timeScale` |
 | `setBounds(maxPosition)` | Define limites do palco |
+| `setPageVisible(visible)` | Adiciona ou remove pausa por visibilidade |
+| `setReducedMotion(enabled)` | Troca timeline completa por feedback reduzido |
 
 ### 9.1 API do orquestrador
 
@@ -299,6 +321,16 @@ started | interrupted | queued | replaced-in-queue
 
 O motor chama `onActionComplete` ao terminar caminhada, salto, expressão,
 interação ou demo. `main.ts` encaminha o sinal para `completeActive`.
+
+### 9.2 API do monitor
+
+| Recurso | Uso |
+|---|---|
+| `start()` | Inicia amostragem com `requestAnimationFrame` |
+| `stop()` | Cancela amostragem |
+| `reset()` | Descarta janela e timestamp anteriores |
+| `detectTargetFps()` | Classifica meta em 60 ou 120 Hz |
+| `calculateFrameMetrics()` | Calcula FPS, média, P95, quedas e qualidade |
 
 ## 10. Entradas implementadas
 
@@ -316,6 +348,9 @@ interação ou demo. `main.ts` encaminha o sinal para `completeActive`.
 - velocidade e escala;
 - painel de ação ativa, decisão e fila;
 - botões `Limpar fila` e `Parar tudo`;
+- seletor automático, completo e reduzido;
+- telemetria de FPS, meta, frame médio, P95 e quedas;
+- indicador de aba ativa ou pausada;
 - redimensionamento da janela.
 
 ## 11. Validação obrigatória
@@ -360,13 +395,19 @@ Teste manual:
 27. comando repetido pendente é substituído;
 28. limpar fila preserva ação ativa;
 29. parar tudo limpa ação e fila.
+30. meta de 60/120 Hz detectada;
+31. métricas atualizam a cada 500 ms;
+32. aba oculta pausa motor e monitor;
+33. pausa manual sobrevive à troca de aba;
+34. modo automático segue `prefers-reduced-motion`;
+35. modo reduzido elimina grandes trajetórias.
 
 ## 12. Problemas e limitações conhecidas
 
 - `/favicon.ico` pode retornar 404; é inofensivo.
-- `prefers-reduced-motion` ainda não controla integralmente timelines GSAP.
-- testes automatizados cobrem o orquestrador, mas não renderização GSAP/DOM;
-- FPS exibido é estático, não medido;
+- testes automatizados cobrem cálculos e orquestrador, mas não navegador real;
+- monitor identifica 60/120 Hz, não todas as frequências possíveis;
+- quedas exibidas pertencem à janela móvel, não ao total da sessão;
 - o Byte definitivo e spritesheets ainda não existem neste projeto;
 - o giro por `scaleX` também espelha detalhes internos do protótipo;
 - corrida possui botão direto prioritariamente para a direita; teclado e
@@ -397,22 +438,21 @@ Teste manual:
 
 Escopo recomendado:
 
-- medir FPS real, frame time médio e quedas de frame;
-- diferenciar metas de 60 Hz e 120 Hz;
-- pausar timelines quando a aba estiver oculta;
-- integrar `prefers-reduced-motion` ao motor GSAP;
-- oferecer modo reduzido manual no laboratório;
-- medir impacto de mais de uma instância.
+- executar timelines GSAP em ambiente DOM de teste;
+- testar interrupção e limpeza com elementos reais;
+- suportar criação e destruição explícita do motor;
+- medir mais de uma instância do Byte;
+- investigar vazamento de tweens, listeners e memória;
+- preparar relatório comparativo desktop e mobile.
 
 Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 08: desempenho e acessibilidade.
-2. Testes de integração GSAP/DOM.
-3. Spritesheet oficial.
-4. Avaliar PixiJS.
-5. Integração experimental com cópia do tema Tray.
+1. Protótipo 09: robustez e testes de integração.
+2. Spritesheet oficial.
+3. Avaliar PixiJS.
+4. Integração experimental com cópia do tema Tray.
 
 ## 16. Regras para futuras IAs
 
@@ -519,3 +559,17 @@ Próximo passo:
 - **Limitação:** testes ainda não renderizam DOM nem executam timelines GSAP
   em navegador real.
 - **Próximo passo:** medir desempenho e integrar movimento reduzido ao motor.
+
+### 2026-07-30 — Protótipo 08
+
+- **Branch:** `feature/performance-accessibility`
+- **Commit:** a confirmar após a publicação.
+- **Objetivo:** medir fluidez real e respeitar preferências de movimento.
+- **Mudanças:** monitor `requestAnimationFrame`, FPS, frame médio, P95,
+  quedas, meta de 60/120 Hz, qualidade, pausa por visibilidade, conjunto de
+  motivos de pausa e modos automático, completo e reduzido.
+- **Validação:** TypeScript, build Vite, `git diff --check` e 12 testes
+  automatizados aprovados.
+- **Limitação:** falta validação visual em navegador real, aparelhos móveis e
+  múltiplas instâncias.
+- **Próximo passo:** testes DOM/GSAP, ciclo de destruição e sessões longas.

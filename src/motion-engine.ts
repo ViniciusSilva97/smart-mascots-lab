@@ -53,6 +53,8 @@ export class ByteMotionEngine {
   private activeMotion: Motion | 'expression' | 'interaction' = 'idle'
   private activeObject: HTMLElement | null = null
   private trackingEnabled = true
+  private reducedMotion = false
+  private readonly pauseReasons = new Set<'user' | 'visibility'>()
 
   constructor(root: HTMLElement, callbacks: EngineCallbacks) {
     this.byte = root
@@ -87,6 +89,10 @@ export class ByteMotionEngine {
     this.callbacks.onJumpStateChange('grounded')
     this.callbacks.onAttentionStateChange('relaxed')
     this.callbacks.onInteractionStateChange('idle')
+    if (this.reducedMotion && motion !== 'idle') {
+      this.replaceTimeline(() => this.createReducedFeedback())
+      return
+    }
     this.replaceTimeline(() => this.createMotion(motion))
   }
 
@@ -108,6 +114,10 @@ export class ByteMotionEngine {
     this.callbacks.onExpressionChange(null)
     this.callbacks.onJumpStateChange('grounded')
     this.callbacks.onInteractionStateChange('idle')
+    if (this.reducedMotion) {
+      this.replaceTimeline(() => this.createReducedFeedback({ relocateX: clampedTarget }))
+      return
+    }
     this.replaceTimeline(() => this.createLocomotion(this.positionX, clampedTarget, running, true))
   }
 
@@ -124,6 +134,10 @@ export class ByteMotionEngine {
     this.callbacks.onExpressionChange(null)
     this.callbacks.onLocomotionStateChange('idle')
     this.callbacks.onInteractionStateChange('idle')
+    if (this.reducedMotion) {
+      this.replaceTimeline(() => this.createReducedFeedback())
+      return
+    }
     this.replaceTimeline(() => this.createJump(this.positionX, targetX, longJump, true))
   }
 
@@ -132,6 +146,10 @@ export class ByteMotionEngine {
     this.callbacks.onMotionChange('walk')
     this.callbacks.onExpressionChange(null)
     this.callbacks.onInteractionStateChange('idle')
+    if (this.reducedMotion) {
+      this.replaceTimeline(() => this.createReducedFeedback())
+      return
+    }
     this.replaceTimeline(() => {
       const demo = gsap.timeline()
       return demo
@@ -156,24 +174,36 @@ export class ByteMotionEngine {
   }
 
   togglePause() {
-    if (this.timeline.paused()) this.timeline.resume()
-    else this.timeline.pause()
-    this.callbacks.onPlayStateChange(this.timeline.paused())
+    if (this.pauseReasons.has('user')) this.pauseReasons.delete('user')
+    else this.pauseReasons.add('user')
+    this.applyPauseState()
   }
 
   restart() {
     this.timeline.restart()
-    this.callbacks.onPlayStateChange(false)
+    this.applyPauseState()
   }
 
   setProgress(progress: number) {
-    this.timeline.pause().progress(progress)
-    this.callbacks.onPlayStateChange(true)
+    this.pauseReasons.add('user')
+    this.timeline.progress(progress)
+    this.applyPauseState()
   }
 
   setSpeed(speed: number) {
     this.speed = speed
     this.timeline.timeScale(speed)
+  }
+
+  setPageVisible(visible: boolean) {
+    if (visible) this.pauseReasons.delete('visibility')
+    else this.pauseReasons.add('visibility')
+    this.applyPauseState()
+  }
+
+  setReducedMotion(enabled: boolean) {
+    this.reducedMotion = enabled
+    this.play('idle')
   }
 
   setBounds(maxPosition: number) {
@@ -235,6 +265,10 @@ export class ByteMotionEngine {
     this.callbacks.onExpressionChange(expression)
     this.callbacks.onAttentionStateChange(expression)
     this.callbacks.onInteractionStateChange('idle')
+    if (this.reducedMotion) {
+      this.replaceTimeline(() => this.createReducedFeedback({ direction: focusDirection }))
+      return
+    }
     this.replaceTimeline(() => this.createExpression(expression, focusDirection))
   }
 
@@ -242,6 +276,16 @@ export class ByteMotionEngine {
     this.activeMotion = 'interaction'
     this.callbacks.onExpressionChange(null)
     this.callbacks.onAttentionStateChange('focused')
+
+    if (this.reducedMotion) {
+      const direction = (targetX >= this.positionX ? 1 : -1) as -1 | 1
+      this.callbacks.onInteractionStateChange('presenting')
+      this.replaceTimeline(() => {
+        this.activeObject = target
+        return this.createReducedFeedback({ target, direction })
+      })
+      return
+    }
 
     this.replaceTimeline(() => {
       const fromX = this.positionX
@@ -380,6 +424,11 @@ export class ByteMotionEngine {
     this.callbacks.onAttentionStateChange('curious')
     this.callbacks.onInteractionStateChange('out-of-reach')
 
+    if (this.reducedMotion) {
+      this.replaceTimeline(() => this.createReducedFeedback({ direction: focusDirection }))
+      return
+    }
+
     this.replaceTimeline(() => {
       const timeline = gsap.timeline()
       timeline
@@ -427,8 +476,17 @@ export class ByteMotionEngine {
     this.timeline
       .timeScale(this.speed)
       .eventCallback('onUpdate', () => this.callbacks.onProgress(this.timeline.progress()))
-      .eventCallback('onStart', () => this.callbacks.onPlayStateChange(false))
-      .play(0)
+      .eventCallback('onStart', () => this.callbacks.onPlayStateChange(this.pauseReasons.size > 0))
+
+    if (this.pauseReasons.size > 0) this.timeline.pause(0)
+    else this.timeline.play(0)
+  }
+
+  private applyPauseState() {
+    const paused = this.pauseReasons.size > 0
+    if (paused) this.timeline.pause()
+    else this.timeline.resume()
+    this.callbacks.onPlayStateChange(paused)
   }
 
   private syncRenderedPosition() {
@@ -465,6 +523,13 @@ export class ByteMotionEngine {
   }
 
   private createIdle() {
+    if (this.reducedMotion) {
+      return gsap.timeline({ repeat: -1 })
+        .to({}, { duration: 2.5 })
+        .to(this.eyes, { scaleY: 0.08, duration: 0.06, ease: 'none' })
+        .to(this.eyes, { scaleY: 1, duration: 0.08, ease: 'none' })
+    }
+
     const timeline = gsap.timeline({ repeat: -1, repeatRefresh: true })
     timeline
       .to(this.byte, { y: -3, duration: 0.65, ease: 'sine.inOut' })
@@ -479,6 +544,55 @@ export class ByteMotionEngine {
         yoyo: true,
         repeat: 1,
       }, 0.15)
+    return timeline
+  }
+
+  private createReducedFeedback(options: {
+    target?: HTMLElement
+    direction?: -1 | 1
+    relocateX?: number
+  } = {}) {
+    const direction = options.direction ?? this.direction
+    const timeline = gsap.timeline()
+
+    timeline
+      .call(() => {
+        this.direction = direction
+        if (options.relocateX !== undefined) {
+          this.positionX = options.relocateX
+          gsap.set(this.wrap, { x: options.relocateX })
+        }
+        gsap.set(this.byte, { scaleX: direction })
+      })
+      .to(this.eyes, { scaleY: 0.35, duration: 0.08, yoyo: true, repeat: 1 })
+      .to(this.head, { rotation: 2 * direction, duration: 0.12, yoyo: true, repeat: 1 }, '<')
+      .to(this.smile, { scaleX: 1.2, duration: 0.12, yoyo: true, repeat: 1 }, '<')
+
+    if (options.target) {
+      timeline.to(options.target, {
+        scale: 1.05,
+        opacity: 0.82,
+        duration: 0.14,
+        yoyo: true,
+        repeat: 1,
+      }, '<')
+    }
+
+    timeline
+      .to([this.head, this.eyes, this.smile], {
+        clearProps: 'x,y,rotation,scaleX,scaleY,opacity',
+        duration: 0.08,
+      })
+      .call(() => {
+        if (options.target) {
+          gsap.set(options.target, { clearProps: 'transform,opacity' })
+          this.activeObject = null
+        }
+        this.callbacks.onInteractionStateChange('idle')
+        this.play('idle')
+        this.callbacks.onActionComplete()
+      })
+
     return timeline
   }
 

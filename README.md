@@ -8,9 +8,20 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 07 — Orquestração de estados**
+**Protótipo 08 — Desempenho e acessibilidade**
 
 - animações coordenadas com GSAP;
+- medição real de FPS pelo `requestAnimationFrame`;
+- detecção automática de meta de 60 ou 120 Hz;
+- tempo médio, percentil 95 e quedas de frame na janela atual;
+- classificação de qualidade: excelente, estável, atenção ou crítico;
+- pausa automática do GSAP e da telemetria quando a aba fica oculta;
+- retomada sem contar a pausa como uma queda de desempenho;
+- seletor de movimento automático, completo ou reduzido;
+- modo automático respeita `prefers-reduced-motion`;
+- modo reduzido remove saltos, transporte e deslocamentos animados extensos;
+- telemetria inteiramente local, sem backend ou envio de dados;
+- 12 testes automatizados aprovados;
 - orquestrador independente para prioridade, fila e interrupção;
 - painel em tempo real com ação ativa, decisão e comandos aguardando;
 - interações e demonstração protegidas como sequências atômicas;
@@ -52,7 +63,7 @@ Pré-requisitos:
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/state-orchestrator
+git switch feature/performance-accessibility
 npm install
 npm run dev
 ```
@@ -87,6 +98,9 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `Espaço` | Pausa ou continua a timeline |
 | `Limpar fila` | Remove comandos aguardando sem parar a ação atual |
 | `Parar tudo` | Interrompe a ação atual, limpa a fila e volta ao `idle` |
+| Movimento `Automático` | Segue a preferência de acessibilidade do sistema |
+| Movimento `Completo` | Mantém todas as animações do laboratório |
+| Movimento `Reduzido` | Usa feedbacks curtos e evita grandes trajetórias |
 
 ## Documentação
 
@@ -106,6 +120,7 @@ Abra o endereço mostrado pelo Vite, normalmente
 | `feature/attention-engine` | Protótipo 05: expressões e atenção |
 | `feature/object-interaction-engine` | Protótipo 06: interação com objetos |
 | `feature/state-orchestrator` | Protótipo 07: prioridade, fila e interrupção |
+| `feature/performance-accessibility` | Protótipo 08: telemetria e movimento reduzido |
 
 As branches anteriores são preservadas como marcos de comparação. Não faça
 merge na `main` enquanto o laboratório ainda estiver em experimentação.

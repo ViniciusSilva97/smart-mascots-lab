@@ -82,6 +82,8 @@ smart-mascots-lab/
 ├── src/
 │   ├── main.ts
 │   ├── motion-engine.ts
+│   ├── performance-monitor.ts
+│   ├── performance-monitor.test.ts
 │   ├── state-orchestrator.ts
 │   ├── state-orchestrator.test.ts
 │   └── style.css
@@ -115,10 +117,10 @@ Cada comando deve exibir uma versão.
 ```powershell
 git clone https://github.com/ViniciusSilva97/smart-mascots-lab.git
 cd smart-mascots-lab
-git switch feature/state-orchestrator
+git switch feature/performance-accessibility
 ```
 
-O `git switch` escolhe a branch do Protótipo 07. Ela já contém os protótipos
+O `git switch` escolhe a branch do Protótipo 08. Ela já contém os protótipos
 anteriores e a documentação em seu histórico.
 
 ### 5.3 Instalar e iniciar
@@ -589,6 +591,12 @@ podem produzir saltos e resultados imprevisíveis.
 25. Clique várias vezes no palco e confirme que só o último destino permanece.
 26. Use `Limpar fila` sem interromper a ação atual.
 27. Use `Parar tudo` durante uma interação.
+28. Observe a telemetria até sair do estado `CALIBRANDO`.
+29. Confirme se a meta detectada é 60 ou 120 Hz.
+30. Troque de aba durante uma animação e retorne.
+31. Confirme que a animação retoma sem registrar a pausa como queda.
+32. Teste os modos `Automático`, `Completo` e `Reduzido`.
+33. No modo reduzido, confirme que não há salto nem transporte animado.
 
 ### 15.2 Critérios de aprovação
 
@@ -611,6 +619,11 @@ podem produzir saltos e resultados imprevisíveis.
 - fila executa prioridade maior primeiro;
 - comandos repetidos pendentes são consolidados;
 - reset limpa estado ativo e fila;
+- FPS, frame médio e P95 usam amostras reais do navegador;
+- a meta de 60/120 Hz é detectada sem depender do FPS estático;
+- frames longos da aba oculta não contaminam a medição;
+- pausa manual permanece ativa depois de ocultar e reabrir a aba;
+- movimento reduzido preserva feedback sem grandes trajetórias;
 - um novo comando interrompe o anterior sem deixar membros deformados;
 - o build termina sem erros.
 
@@ -624,7 +637,7 @@ npm test
 ```
 
 O primeiro comando executa o compilador TypeScript e o build do Vite. O
-segundo executa os testes automatizados do orquestrador.
+segundo testa o orquestrador e os cálculos de desempenho.
 
 ## 16. Problemas conhecidos e diagnóstico
 
@@ -671,21 +684,49 @@ relevantes.
 
 ## 17. Acessibilidade
 
-O laboratório já considera `prefers-reduced-motion` no CSS, mas a cobertura
-do GSAP ainda precisa ser ampliada.
+O seletor possui três modos:
 
-Antes da integração real, devemos:
+- `Automático`: segue `prefers-reduced-motion`;
+- `Completo`: usa todas as timelines;
+- `Reduzido`: troca grandes trajetórias por piscada, sorriso e pequena
+  inclinação da cabeça.
 
-- detectar a preferência no TypeScript;
-- oferecer versão estática ou movimentos reduzidos;
-- evitar flashes;
-- manter controles acessíveis por teclado;
-- não transformar movimento em requisito para comprar ou navegar;
-- garantir nomes acessíveis para botões.
+No modo reduzido, caminhada aplica o destino sem animar o percurso; salto não
+eleva o corpo; interação destaca o produto sem retirá-lo do pedestal. O
+orquestrador continua recebendo conclusão, portanto a fila não fica presa.
+
+Ainda devemos garantir na integração real que o movimento nunca seja
+necessário para comprar ou navegar e que todos os controles permaneçam
+acessíveis por teclado.
 
 ## 18. Desempenho
 
-Boas práticas atuais:
+`FramePerformanceMonitor` usa `requestAnimationFrame`. Ele mantém até 120
+intervalos recentes e atualiza o painel a cada 500 ms.
+
+Métricas:
+
+- FPS calculado pela média dos intervalos;
+- tempo médio por frame;
+- P95, que evidencia travadas escondidas pela média;
+- frames acima de 1,5 vez o orçamento;
+- meta de 60 ou 120 Hz estimada pela mediana;
+- qualidade baseada na proporção entre FPS observado e meta.
+
+Qualidade:
+
+| Proporção da meta | Classificação |
+|---:|---|
+| 95% ou mais | excelente |
+| 85% a 94% | estável |
+| 70% a 84% | atenção |
+| abaixo de 70% | crítico |
+
+Ao ocultar a página, o monitor para, zera o timestamp e o motor adiciona
+`visibility` ao conjunto de motivos de pausa. Ao retornar, só retoma se não
+existir também uma pausa manual.
+
+Boas práticas preservadas:
 
 - preferir `transform` e `opacity`;
 - manter apenas uma timeline principal por personagem;
@@ -696,10 +737,9 @@ Boas práticas atuais:
 Antes da Tray:
 
 - medir tamanho do bundle;
-- testar aparelhos Android intermediários;
-- testar várias instâncias;
 - evitar carregar spritesheets fora da viewport;
-- interromper animações quando a aba estiver oculta;
+- testar aparelhos Android intermediários e telas de 120 Hz;
+- testar várias instâncias;
 - verificar consumo de CPU e memória.
 
 ## 19. Estratégia de branches
@@ -716,6 +756,7 @@ main
                     └── feature/attention-engine
                         └── feature/object-interaction-engine
                             └── feature/state-orchestrator
+                                └── feature/performance-accessibility
 ```
 
 Não é necessário mesclar uma branch anterior para testar a seguinte: cada
@@ -761,13 +802,21 @@ branch nova foi criada a partir da anterior.
 - fila e interrupção de ações;
 - testes automatizados.
 
-### Protótipo 08 — Desempenho e acessibilidade — próximo
+### Protótipo 08 — Desempenho e acessibilidade — concluído
 
 - medição real de FPS e tempo de frame;
 - pausa automática quando a aba estiver oculta;
 - modo de movimento reduzido integrado ao GSAP;
 - métricas para 60 e 120 Hz;
-- testes em múltiplas instâncias.
+- testes dos cálculos.
+
+### Protótipo 09 — Robustez — próximo
+
+- testes de integração DOM/GSAP;
+- múltiplas instâncias do Byte;
+- sessões longas e vazamento de memória;
+- criação e destruição segura do motor;
+- relatório comparativo desktop e mobile.
 
 ### Protótipo final
 
