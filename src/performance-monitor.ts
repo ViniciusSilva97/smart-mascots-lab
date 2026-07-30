@@ -80,8 +80,10 @@ export class FramePerformanceMonitor {
 
   constructor(
     onMetrics: MetricsListener,
-    requestFrame: AnimationFrameRequest = requestAnimationFrame,
-    cancelFrame: AnimationFrameCancel = cancelAnimationFrame,
+    requestFrame: AnimationFrameRequest = callback =>
+      window.requestAnimationFrame(callback),
+    cancelFrame: AnimationFrameCancel = handle =>
+      window.cancelAnimationFrame(handle),
   ) {
     this.onMetrics = onMetrics
     this.requestFrame = requestFrame
