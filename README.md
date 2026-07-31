@@ -8,12 +8,17 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 
 ## Estado atual
 
-**Protótipo 09 — Robustez e testes de integração — etapa 1**
+**Protótipo 09 — Robustez e testes de integração — etapa 2**
 
 - testes reais no Chromium com Playwright;
-- seis cenários executados em perfis desktop e mobile;
+- oito casos executados em perfis desktop e mobile;
 - detecção automática de exceções JavaScript durante a inicialização;
 - validação de telemetria, prioridade, interrupção e movimento reduzido;
+- montagem e desmontagem explícitas do laboratório;
+- destruição idempotente do motor, orquestrador e monitor de desempenho;
+- remoção agrupada de listeners com `AbortController`;
+- cancelamento de timelines, tweens e frames pendentes;
+- teste de desmontagem e remontagem para detectar callbacks residuais;
 - workflow GitHub Actions para executar o navegador em ambiente reproduzível;
 - animações coordenadas com GSAP;
 - medição real de FPS pelo `requestAnimationFrame`;
@@ -26,7 +31,7 @@ provisória: nesta fase, o foco é a qualidade da animação e da interação.
 - modo automático respeita `prefers-reduced-motion`;
 - modo reduzido remove saltos, transporte e deslocamentos animados extensos;
 - telemetria inteiramente local, sem backend ou envio de dados;
-- 13 testes unitários aprovados;
+- 15 testes unitários aprovados;
 - orquestrador independente para prioridade, fila e interrupção;
 - painel em tempo real com ação ativa, decisão e comandos aguardando;
 - interações e demonstração protegidas como sequências atômicas;
@@ -82,9 +87,9 @@ Abra o endereço mostrado pelo Vite, normalmente
 |---|---|
 | `npm run dev` | Inicia o ambiente de desenvolvimento |
 | `npm run build` | Valida o TypeScript e gera o build |
-| `npm test` | Executa os 13 testes unitários com Vitest |
+| `npm test` | Executa os 15 testes unitários com Vitest |
 | `npx playwright install chromium` | Instala o navegador usado nos testes |
-| `npm run test:browser` | Gera o build e executa seis cenários no Chromium |
+| `npm run test:browser` | Gera o build e executa oito casos no Chromium |
 | `npm run test:browser:headed` | Executa os testes mostrando o navegador |
 | `npm run test:all` | Executa testes unitários e de navegador |
 | `npm run preview` | Visualiza localmente o build de produção |
