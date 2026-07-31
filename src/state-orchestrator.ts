@@ -48,12 +48,13 @@ const summarize = (command: MascotCommand): CommandSummary => ({
 })
 
 export class CommandOrchestrator {
-  private readonly onChange: SnapshotListener
+  private onChange: SnapshotListener | null
   private readonly queueLimit: number
   private active: MascotCommand | null = null
   private queue: QueuedCommand[] = []
   private order = 0
   private lastDecision: CommandDecision = 'completed'
+  private destroyed = false
 
   constructor(onChange: SnapshotListener, queueLimit = 4) {
     this.onChange = onChange
@@ -62,6 +63,7 @@ export class CommandOrchestrator {
   }
 
   dispatch(command: MascotCommand): CommandDecision {
+    this.assertAlive()
     if (command.kind === 'reset') {
       this.queue = []
       this.active = null
@@ -85,6 +87,7 @@ export class CommandOrchestrator {
   }
 
   completeActive(): void {
+    if (this.destroyed) return
     if (!this.active) return
 
     this.active = null
@@ -94,6 +97,7 @@ export class CommandOrchestrator {
   }
 
   clearQueue(): void {
+    if (this.destroyed) return
     this.queue = []
     this.emit()
   }
@@ -104,6 +108,15 @@ export class CommandOrchestrator {
       queue: this.queue.map(summarize),
       lastDecision: this.lastDecision,
     }
+  }
+
+  destroy(): void {
+    if (this.destroyed) return
+    this.destroyed = true
+    this.active = null
+    this.queue = []
+    this.order = 0
+    this.onChange = null
   }
 
   private start(command: MascotCommand, decision: 'started' | 'interrupted'): void {
@@ -152,6 +165,12 @@ export class CommandOrchestrator {
   }
 
   private emit(): void {
-    this.onChange(this.getSnapshot())
+    this.onChange?.(this.getSnapshot())
+  }
+
+  private assertAlive(): void {
+    if (this.destroyed) {
+      throw new Error('CommandOrchestrator has been destroyed')
+    }
   }
 }
