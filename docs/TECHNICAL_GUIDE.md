@@ -945,6 +945,17 @@ modelagem definitiva do conceito aprovado do Byte.
 - o corpo gira de perfil durante deslocamentos e retorna de frente ao apresentar;
 - aproximações longas ao produto usam corrida, preservando o transporte cuidadoso.
 
+### Protótipo 11 — Palco 3D compartilhado — etapa 1
+
+- o canvas Three.js ocupa todo o palco, em vez de acompanhar o Byte como uma imagem;
+- Byte e produtos existem na mesma cena e no mesmo sistema de coordenadas;
+- câmera em perspectiva, iluminação frontal e de recorte, piso e grade 3D;
+- posição produzida pelo engine é convertida para coordenada mundial X;
+- CPU, SSD, GPU e Servidor possuem proxies geométricos tridimensionais;
+- o produto selecionado acompanha o Byte durante transporte e apresentação;
+- `ResizeObserver` adapta câmera, renderer e objetos ao palco responsivo;
+- elementos HTML permanecem como controles acessíveis e fallback 2D.
+
 ### Protótipo final
 
 - Byte oficial;

@@ -237,8 +237,8 @@ app.innerHTML = `
 
 const byte = app.querySelector<HTMLElement>('#byte')!
 const byteWrap = app.querySelector<HTMLElement>('#byte-wrap')!
-const byte3d = new Byte3DView(byteWrap, byte)
 const stage = app.querySelector<HTMLElement>('#stage')!
+const byte3d = new Byte3DView(stage, byteWrap, byte)
 const state = app.querySelector<HTMLElement>('#state')!
 const speech = app.querySelector<HTMLElement>('#speech')!
 const pause = app.querySelector<HTMLButtonElement>('#pause')!
@@ -395,6 +395,9 @@ const engine = new ByteMotionEngine(byte, {
   },
   onSpeedChange(speed) {
     byte3d.setSpeed(speed)
+  },
+  onPositionChange(positionX) {
+    byte3d.setPositionPixels(positionX)
   },
   onActionComplete() {
     orchestrator.completeActive()
@@ -580,7 +583,9 @@ speed.addEventListener('input', () => {
 
 const scale = app.querySelector<HTMLInputElement>('#scale')!
 scale.addEventListener('input', () => {
-  root.style.setProperty('--mascot-scale', `${Number(scale.value) / 100}`)
+  const scaleValue = Number(scale.value) / 100
+  root.style.setProperty('--mascot-scale', `${scaleValue}`)
+  byte3d.setScale(scaleValue)
   app.querySelector<HTMLOutputElement>('#scale-value')!.value = `${scale.value}%`
 }, { signal })
 
@@ -647,6 +652,7 @@ app.querySelectorAll<HTMLButtonElement>('.product-target').forEach(target => {
         atomic: true,
         execute: () => {
           speech.textContent = `Vou buscar e apresentar ${label} para você!`
+          byte3d.setInteractionTarget(label)
           engine.interact(product, targetX)
         },
       }))

@@ -33,6 +33,7 @@ type EngineCallbacks = {
   onLookAt: (x: number, y: number) => void
   onFacingChange: (direction: -1 | 1) => void
   onSpeedChange: (speed: number) => void
+  onPositionChange: (positionX: number) => void
   onActionComplete: () => void
   onProgress: (progress: number) => void
   onPlayStateChange: (paused: boolean) => void
@@ -248,6 +249,7 @@ export class ByteMotionEngine {
     this.maxPosition = Math.max(60, maxPosition)
     this.positionX = gsap.utils.clamp(-this.maxPosition, this.maxPosition, this.positionX)
     gsap.set(this.wrap, { x: this.positionX })
+    this.callbacks.onPositionChange(this.positionX)
   }
 
   setTracking(enabled: boolean) {
@@ -524,7 +526,11 @@ export class ByteMotionEngine {
     this.timeline = createTimeline()
     this.timeline
       .timeScale(this.speed)
-      .eventCallback('onUpdate', () => this.callbacks.onProgress(this.timeline.progress()))
+      .eventCallback('onUpdate', () => {
+        this.callbacks.onProgress(this.timeline.progress())
+        const renderedX = Number(gsap.getProperty(this.wrap, 'x'))
+        if (Number.isFinite(renderedX)) this.callbacks.onPositionChange(renderedX)
+      })
       .eventCallback('onStart', () => this.callbacks.onPlayStateChange(this.pauseReasons.size > 0))
 
     if (this.pauseReasons.size > 0) this.timeline.pause(0)

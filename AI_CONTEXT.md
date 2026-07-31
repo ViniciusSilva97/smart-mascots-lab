@@ -32,7 +32,7 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 10 — Ponte de renderização 2D/3D — etapa 2**
+**Protótipo 11 — Palco 3D compartilhado — etapa 1**
 
 Branch canônica:
 
@@ -227,6 +227,18 @@ aproximação, alcance e transporte, o modelo gira aproximadamente 90 graus na
 direção do percurso. Em `presenting` e no repouso, retorna suavemente para a
 câmera. Distâncias longas até produtos usam corrida; o transporte de volta
 permanece controlado.
+
+### 6.12 Palco 3D compartilhado
+
+No Protótipo 11, o canvas ocupa todo o `#stage`. Byte, CPU, SSD, GPU e Servidor
+compartilham a mesma cena, câmera, luzes, chão e grade do Three.js. O engine
+continua publicando posição em pixels por enquanto; `Byte3DView` converte esse
+valor para coordenada mundial X e move o modelo dentro da cena. O DOM mantém
+os alvos clicáveis e textos acessíveis, mas seus desenhos 2D ficam ocultos no
+modo 3D.
+
+O `ResizeObserver` mantém renderer, câmera e posições dos produtos alinhados ao
+palco responsivo. Ele deve sempre ser desconectado em `destroy()`.
 
 ## 7. Erro histórico que não pode voltar
 
