@@ -304,7 +304,7 @@ footer { border-top: 1px solid var(--line); border-bottom: 0; color: #555d59; fo
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
-:root[data-motion-mode="reduced"] *, :root[data-motion-mode="reduced"] *::before, :root[data-motion-mode="reduced"] *::after {
+[data-motion-mode="reduced"] *, [data-motion-mode="reduced"] *::before, [data-motion-mode="reduced"] *::after {
   animation-duration: .01ms !important;
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
