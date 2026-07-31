@@ -222,6 +222,12 @@ do GLB. Os olhos usam `ByteEyeLeft` e `ByteEyeRight`; membros usam os grupos
 `ByteArmLeft`, `ByteArmRight`, `ByteLegLeft` e `ByteLegRight`. Preserve esses
 nomes no modelo definitivo ou forneça um adaptador explícito.
 
+A orientação 3D segue a ação: durante preparação, caminhada, frenagem,
+aproximação, alcance e transporte, o modelo gira aproximadamente 90 graus na
+direção do percurso. Em `presenting` e no repouso, retorna suavemente para a
+câmera. Distâncias longas até produtos usam corrida; o transporte de volta
+permanece controlado.
+
 ## 7. Erro histórico que não pode voltar
 
 No primeiro envio do Protótipo 02, `replaceTimeline` recebia uma timeline já

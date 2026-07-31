@@ -121,3 +121,15 @@ test('encaminha locomoção, olhar e interação para o Byte 3D', async ({ page 
   await expect(page.locator('#byte-wrap')).toHaveAttribute('data-interaction3d', 'approaching')
   expect(runtimeErrors).toEqual([])
 })
+
+test('orienta o Byte de perfil durante o percurso e de frente ao apresentar', async ({ page }) => {
+  const runtimeErrors = trackRuntimeErrors(page)
+  await openLab(page)
+  await page.locator('[data-render-mode="3d"]').click()
+  await page.locator('.product-gpu').click()
+
+  await expect(page.locator('#byte-wrap')).toHaveAttribute('data-interaction3d', 'approaching')
+  await expect(page.locator('#byte-wrap')).toHaveAttribute('data-locomotion3d', 'walking')
+  await expect(page.locator('#byte-wrap')).toHaveAttribute('data-interaction3d', 'presenting', { timeout: 8_000 })
+  expect(runtimeErrors).toEqual([])
+})

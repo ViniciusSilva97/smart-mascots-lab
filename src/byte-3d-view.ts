@@ -38,6 +38,7 @@ export class Byte3DView {
   private gaze = new THREE.Vector2()
   private facing: -1 | 1 = 1
   private speed = 1
+  private elapsed = 0
   private frame: number | null = null
   private destroyed = false
 
@@ -139,14 +140,21 @@ export class Byte3DView {
 
   private readonly render = (): void => {
     if (this.destroyed) return
-    const time = this.clock.getElapsedTime() * this.speed
+    const delta = Math.min(this.clock.getDelta(), 0.05)
+    this.elapsed += delta * this.speed
+    const time = this.elapsed
     if (this.model) {
       const reduced = this.host.closest('[data-motion-mode="reduced"]') !== null
       const amount = reduced ? 0.15 : 1
       const walking = this.locomotion === 'walking' || this.interaction === 'approaching' || this.interaction === 'carrying'
+      const sideOn = this.locomotion === 'preparing'
+        || this.locomotion === 'walking'
+        || this.locomotion === 'braking'
+        || ['approaching', 'aligning', 'reaching', 'grabbing', 'carrying', 'releasing'].includes(this.interaction)
       const stride = Math.sin(time * (this.speed > 1.2 ? 11 : 8))
       this.model.position.y = (walking ? Math.abs(stride) * 0.07 : Math.sin(time * 2.2) * 0.035) * amount
-      this.model.rotation.y = this.facing === 1 ? 0.14 : -0.14
+      const targetYaw = sideOn ? this.facing * Math.PI / 2 : 0
+      this.model.rotation.y = THREE.MathUtils.damp(this.model.rotation.y, targetYaw, 9, delta)
       if (this.head) {
         const curious = this.expression === 'curious' || this.interaction === 'out-of-reach'
         this.head.rotation.z = (curious ? 0.13 * this.facing : 0) + Math.sin(time * 1.2) * 0.015 * amount

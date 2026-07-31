@@ -942,6 +942,8 @@ modelagem definitiva do conceito aprovado do Byte.
 - estados de interação controlam aproximação, alcance, transporte e apresentação;
 - velocidade do painel também afeta a animação 3D;
 - nomes e pivôs do GLB foram preparados para controle independente.
+- o corpo gira de perfil durante deslocamentos e retorna de frente ao apresentar;
+- aproximações longas ao produto usam corrida, preservando o transporte cuidadoso.
 
 ### Protótipo final
 

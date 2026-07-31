@@ -349,6 +349,7 @@ export class ByteMotionEngine {
         approachX - direction * 64,
       )
       const carryDelta = carryX - approachX
+      const runToProduct = Math.abs(approachX - fromX) > 180
       const handOffsetX = -direction * 44
       const activeArm = this.arms[1]
 
@@ -358,7 +359,7 @@ export class ByteMotionEngine {
       const timeline = gsap.timeline()
       timeline
         .call(() => this.callbacks.onInteractionStateChange('approaching'))
-        .add(this.createLocomotion(fromX, approachX, false, false))
+        .add(this.createLocomotion(fromX, approachX, runToProduct, false))
         .call(() => {
           this.direction = direction
           this.callbacks.onInteractionStateChange('aligning')
