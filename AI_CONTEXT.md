@@ -32,7 +32,7 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 09 — Robustez e testes de integração — etapa 1**
+**Protótipo 09 — Robustez e testes de integração — etapa 2**
 
 Branch canônica:
 
@@ -43,8 +43,8 @@ feature/robustness-integration-tests
 Commit de implementação:
 
 ```text
-1f817b27bbe902004dd795fd8efd2cd3fddcb187
-test: add browser integration infrastructure
+1e249cd110f16365cb035351989ba9a4dc6c7b90
+feat: add explicit mascot lifecycle
 ```
 
 ### 3.2 Histórico
@@ -63,6 +63,7 @@ test: add browser integration infrastructure
 | Protótipo 07 | `feature/state-orchestrator` | `4bfd05f` |
 | Protótipo 08 | `feature/performance-accessibility` | `f4d387b` |
 | Protótipo 09 — etapa 1 | `feature/robustness-integration-tests` | `1f817b2` |
+| Protótipo 09 — etapa 2 | `feature/robustness-integration-tests` | `1e249cd` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -84,14 +85,15 @@ Não adicionar React, Vue, Phaser, PixiJS ou Rive sem uma decisão explícita.
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `src/main.ts` | interface, eventos, controles e adaptação do palco |
+| `src/main.ts` | entrada, montagem única e integração com HMR |
+| `src/lab-app.ts` | interface, eventos, controles, palco e ciclo de vida |
 | `src/motion-engine.ts` | timelines, estado e posição do Byte |
 | `src/performance-monitor.ts` | métricas de frame e classificação |
 | `src/performance-monitor.test.ts` | testes de 60/120 Hz e quedas |
 | `src/state-orchestrator.ts` | prioridade, fila e política de interrupção |
 | `src/state-orchestrator.test.ts` | testes unitários da orquestração |
 | `tests/browser/lab.spec.ts` | integração real desktop e mobile |
-| `playwright.config.ts` | projetos Chromium e servidor de preview |
+| `playwright.config.ts` | projetos Chromium e servidor Vite de teste |
 | `.github/workflows/browser-tests.yml` | automação unitária e de navegador |
 | `src/style.css` | identidade, layout, Byte provisório e responsividade |
 | `index.html` | shell de entrada |
@@ -124,7 +126,7 @@ Não inverter os passos 2 e 3.
 
 ### 6.4 Limites responsivos
 
-`main.ts` mede o palco e chama `setBounds`. O motor limita destinos. Preserve
+`lab-app.ts` mede o palco e chama `setBounds`. O motor limita destinos. Preserve
 essa dupla proteção ao alterar o layout.
 
 ### 6.5 Aparência provisória
@@ -160,7 +162,7 @@ Política canônica:
 - prioridade maior sai primeiro; empates preservam a ordem de chegada.
 
 Não voltar a chamar métodos de movimento diretamente nos eventos de
-`main.ts`. Novas ações corporais devem passar pelo orquestrador.
+`lab-app.ts`. Novas ações corporais devem passar pelo orquestrador.
 
 ### 6.8 Pausas por motivo
 
@@ -178,6 +180,25 @@ mede `requestAnimationFrame`, ignora intervalos acima de 250 ms, conserva até
 
 A meta é 120 FPS quando a mediana indica pelo menos 90 Hz; nos demais casos,
 60 FPS. Quedas são intervalos acima de 1,5 vez o orçamento do frame.
+
+### 6.10 Ciclo de vida explícito
+
+`createMascotLab(app)` cria uma instância isolada e retorna `destroy()`.
+`main.ts` mantém no máximo uma instância ativa por meio de `mountLab()` e
+`destroyLab()`.
+
+Toda desmontagem deve:
+
+1. abortar o `AbortController` compartilhado pelos listeners;
+2. cancelar frames pendentes da interface;
+3. chamar `destroy()` no monitor, orquestrador e motor;
+4. matar timelines e tweens, restaurando o produto ativo;
+5. limpar estilos locais e o contêiner.
+
+Todas as operações `destroy()` são idempotentes. Depois da destruição, uma
+tentativa de iniciar novo trabalho lança erro explícito. Isso é intencional:
+o Playwright deve detectar imediatamente qualquer listener ou callback
+residual.
 
 ## 7. Erro histórico que não pode voltar
 
@@ -333,6 +354,7 @@ started | interrupted | queued | replaced-in-queue
 | `setBounds(maxPosition)` | Define limites do palco |
 | `setPageVisible(visible)` | Adiciona ou remove pausa por visibilidade |
 | `setReducedMotion(enabled)` | Troca timeline completa por feedback reduzido |
+| `destroy()` | Mata timelines/tweens e libera recursos do motor |
 
 ### 9.1 API do orquestrador
 
@@ -342,9 +364,10 @@ started | interrupted | queued | replaced-in-queue
 | `completeActive()` | Finaliza a ação atual e drena a fila |
 | `clearQueue()` | Remove itens pendentes |
 | `getSnapshot()` | Expõe ação ativa, fila e última decisão |
+| `destroy()` | Descarta ação, fila e observador; aceita repetição |
 
 O motor chama `onActionComplete` ao terminar caminhada, salto, expressão,
-interação ou demo. `main.ts` encaminha o sinal para `completeActive`.
+interação ou demo. `lab-app.ts` encaminha o sinal para `completeActive`.
 
 ### 9.2 API do monitor
 
@@ -355,6 +378,7 @@ interação ou demo. `main.ts` encaminha o sinal para `completeActive`.
 | `reset()` | Descarta janela e timestamp anteriores |
 | `detectTargetFps()` | Classifica meta em 60 ou 120 Hz |
 | `calculateFrameMetrics()` | Calcula FPS, média, P95, quedas e qualidade |
+| `destroy()` | Cancela o frame futuro e descarta as amostras |
 
 ## 10. Entradas implementadas
 
@@ -431,8 +455,8 @@ Teste manual:
 ## 12. Problemas e limitações conhecidas
 
 - `/favicon.ico` pode retornar 404; é inofensivo.
-- Playwright cobre inicialização e comandos essenciais, mas ainda não sessões
-  longas, múltiplas instâncias nem consumo de memória;
+- Playwright cobre inicialização, comandos e remontagem, mas ainda não sessões
+  longas, múltiplas instâncias simultâneas nem consumo de memória;
 - monitor identifica 60/120 Hz, não todas as frequências possíveis;
 - quedas exibidas pertencem à janela móvel, não ao total da sessão;
 - o Byte definitivo e spritesheets ainda não existem neste projeto;
@@ -461,12 +485,12 @@ Teste manual:
 
 ## 14. Próximo passo recomendado
 
-**Protótipo 09 — Robustez, etapa 2**
+**Protótipo 09 — Robustez, etapa 3**
 
 Escopo recomendado:
 
-- suportar criação e destruição explícita do motor;
-- medir mais de uma instância do Byte;
+- montar mais de uma instância do Byte ao mesmo tempo;
+- medir custo incremental por instância;
 - investigar vazamento de tweens, listeners e memória;
 - preparar relatório comparativo desktop e mobile.
 
@@ -474,7 +498,7 @@ Não iniciar a arte definitiva antes de validar esse ciclo.
 
 ## 15. Roadmap posterior
 
-1. Protótipo 09, etapa 2: ciclo de vida, múltiplas instâncias e memória.
+1. Protótipo 09, etapa 3: múltiplas instâncias, sessões longas e memória.
 2. Spritesheet oficial.
 3. Avaliar PixiJS.
 4. Integração experimental com cópia do tema Tray.
@@ -613,3 +637,22 @@ Próximo passo:
   instâncias, sessões longas nem medição de memória.
 - **Próximo passo:** introduzir ciclo de vida explícito e provar que listeners,
   timelines e monitores são liberados.
+
+### 2026-07-30 — Protótipo 09, etapa 2
+
+- **Branch:** `feature/robustness-integration-tests`.
+- **Commit local de implementação:** `1e249cd110f16365cb035351989ba9a4dc6c7b90`.
+- **Objetivo:** permitir desmontar e remontar o laboratório sem trabalho
+  residual.
+- **Mudanças:** fábrica `createMascotLab`, entrada com montagem única,
+  desmontagem idempotente, listeners agrupados por `AbortController`,
+  cancelamento de frames, timelines e tweens, destruição do monitor e do
+  orquestrador e novo cenário Playwright de remontagem.
+- **Validação local:** 15 testes unitários, TypeScript, build Vite e
+  `git diff --check` aprovados. O Chromium local não pôde ser baixado porque o
+  ambiente bloqueou o CDN do Playwright; os oito casos ficam sob validação do
+  workflow GitHub Actions.
+- **Limitação:** ainda não há múltiplas instâncias simultâneas, sessão longa
+  nem aferição de memória.
+- **Próximo passo:** criar um cenário multi-Byte e medir custo e estabilidade
+  em sessões prolongadas.
