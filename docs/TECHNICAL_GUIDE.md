@@ -86,6 +86,7 @@ smart-mascots-lab/
 ├── public/
 ├── src/
 │   ├── main.ts
+│   ├── lab-app.ts
 │   ├── motion-engine.ts
 │   ├── performance-monitor.ts
 │   ├── performance-monitor.test.ts
@@ -168,27 +169,32 @@ O navegador carrega `index.html`. Esse arquivo contém o elemento:
 Depois, `src/main.ts`:
 
 1. importa o CSS;
-2. importa o motor;
-3. cria a interface dentro de `#app`;
-4. localiza os elementos necessários;
-5. instancia `ByteMotionEngine`;
-6. registra botões, teclado, clique e redimensionamento.
+2. localiza o contêiner `#app`;
+3. chama `createMascotLab` de `src/lab-app.ts`;
+4. guarda a instância ativa;
+5. oferece `mountLab()` e `destroyLab()` para controlar seu ciclo de vida;
+6. desmonta a instância anterior durante uma atualização de módulo do Vite.
 
 Essa separação permite trocar a interface sem reescrever as animações.
 
-## 7. Responsabilidades de `main.ts`
+## 7. Responsabilidades de `main.ts` e `lab-app.ts`
 
-`main.ts` é a camada de apresentação e interação.
+`main.ts` é uma entrada pequena. Ele garante que exista no máximo uma
+instância montada pelo aplicativo e conecta o ciclo de vida ao Vite.
 
-Ele deve:
+`lab-app.ts` é a camada de apresentação e interação.
+
+Ela deve:
 
 - construir ou conectar a interface;
 - converter ações do usuário em comandos do motor;
 - mostrar estados e progresso;
 - calcular a posição do clique no palco;
 - adaptar os limites quando a janela muda.
+- registrar todos os listeners com o mesmo `AbortSignal`;
+- destruir recursos e esvaziar o contêiner quando solicitado.
 
-Ele não deve:
+Ela não deve:
 
 - conter detalhes de cada passo da caminhada;
 - manipular diretamente todos os braços e pernas;
@@ -209,6 +215,28 @@ destino do motor = posição no palco - metade da largura do palco
 
 O destino ainda é limitado por uma margem, evitando que o personagem saia da
 área visível.
+
+### 7.2 Contrato de ciclo de vida
+
+```typescript
+const lab = createMascotLab(app)
+lab.destroy()
+lab.destroy() // seguro: não executa a limpeza duas vezes
+```
+
+`destroy()` é idempotente. Na primeira chamada, ele:
+
+1. aborta listeners de elementos, janela, documento e preferência de mídia;
+2. cancela o frame pendente do marcador de destino;
+3. encerra o loop do monitor de desempenho;
+4. descarta ação ativa, fila e observador do orquestrador;
+5. mata a timeline e os tweens do motor;
+6. restaura transformações e objetos manipulados;
+7. remove propriedades de estilo e esvazia `#app`.
+
+Depois da destruição, métodos que iniciariam novo trabalho no motor, monitor
+ou orquestrador lançam um erro explícito. Esse comportamento torna listeners
+residuais visíveis nos testes em vez de esconder um vazamento.
 
 ## 8. Responsabilidades de `ByteMotionEngine`
 
@@ -397,7 +425,7 @@ stateDiagram-v2
     Releasing --> Idle
 ```
 
-`main.ts` calcula a posição do produto em relação ao centro do palco e chama:
+`lab-app.ts` calcula a posição do produto em relação ao centro do palco e chama:
 
 ```typescript
 engine.interact(productElement, targetX)
@@ -536,6 +564,18 @@ Não altere a ordem atual sem um teste específico. A fábrica recebida por
 `replaceTimeline` existe para garantir que a criação aconteça depois da
 limpeza.
 
+### 12.2 Destruição segura
+
+`ByteMotionEngine.destroy()` mata a timeline atual, restaura o produto ativo,
+cancela tweens ainda associados às partes do Byte e limpa transformações
+GSAP. `FramePerformanceMonitor.destroy()` cancela o próximo
+`requestAnimationFrame`. `CommandOrchestrator.destroy()` descarta comandos e
+remove sua função observadora.
+
+As três operações aceitam chamadas repetidas. Não substitua esse contrato por
+flags separados na interface: a responsabilidade de liberar recursos pertence
+ao objeto que os criou.
+
 ## 13. Callbacks entre motor e interface
 
 O motor não escreve diretamente nos painéis da página. Ele informa eventos:
@@ -651,12 +691,13 @@ Os testes são separados por responsabilidade:
 - `npm run test:browser:headed` mostra o Chromium durante a execução;
 - `npm run test:all` executa as duas camadas.
 
-O Playwright roda três cenários em dois perfis, totalizando seis casos:
+O Playwright roda quatro cenários em dois perfis, totalizando oito casos:
 
 1. inicialização sem exceção e atualização da telemetria;
 2. registro, prioridade, interrupção e parada de comandos;
 3. funcionamento dos comandos no modo reduzido;
-4. repetição dos mesmos cenários em desktop e mobile.
+4. desmontagem idempotente, remontagem e ausência de callbacks residuais;
+5. repetição dos mesmos cenários em desktop e mobile.
 
 O listener `pageerror` transforma exceções não tratadas do navegador em falha
 de teste. Foi essa camada que faltava quando o erro `Illegal invocation`
@@ -872,9 +913,11 @@ branch nova foi criada a partir da anterior.
 - testes reais de integração DOM/GSAP no Chromium — etapa 1 concluída;
 - validação desktop e mobile — etapa 1 concluída;
 - detecção de exceções de inicialização — etapa 1 concluída;
+- criação e destruição segura do laboratório — etapa 2 concluída;
+- liberação de timelines, frames, listeners e fila — etapa 2 concluída;
+- teste automatizado de desmontagem e remontagem — etapa 2 concluída;
 - múltiplas instâncias do Byte;
 - sessões longas e vazamento de memória;
-- criação e destruição segura do motor;
 - relatório comparativo desktop e mobile.
 
 ### Protótipo final
