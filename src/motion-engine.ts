@@ -54,6 +54,7 @@ export class ByteMotionEngine {
   private activeObject: HTMLElement | null = null
   private trackingEnabled = true
   private reducedMotion = false
+  private destroyed = false
   private readonly pauseReasons = new Set<'user' | 'visibility'>()
 
   constructor(root: HTMLElement, callbacks: EngineCallbacks) {
@@ -73,7 +74,29 @@ export class ByteMotionEngine {
     this.play('idle')
   }
 
+  destroy() {
+    if (this.destroyed) return
+    this.destroyed = true
+
+    this.timeline.kill()
+    this.resetActiveObject()
+    const targets = [
+      this.wrap,
+      this.byte,
+      this.head,
+      this.antenna,
+      ...this.eyes,
+      this.smile,
+      ...this.arms,
+      ...this.legs,
+    ]
+    gsap.killTweensOf(targets)
+    gsap.set(targets, { clearProps: 'transform,opacity' })
+    this.pauseReasons.clear()
+  }
+
   play(motion: Motion) {
+    this.assertAlive()
     if (motion === 'walk') {
       this.walk(this.direction)
       return
@@ -97,11 +120,13 @@ export class ByteMotionEngine {
   }
 
   walk(direction: -1 | 1, running = false) {
+    this.assertAlive()
     const distance = running ? 320 : 220
     this.walkTo(this.positionX + distance * direction, running)
   }
 
   walkTo(targetX: number, running = false) {
+    this.assertAlive()
     const clampedTarget = gsap.utils.clamp(-this.maxPosition, this.maxPosition, targetX)
     if (Math.abs(clampedTarget - this.positionX) < 12) {
       this.play('idle')
@@ -122,6 +147,7 @@ export class ByteMotionEngine {
   }
 
   jump(longJump = false) {
+    this.assertAlive()
     const distance = longJump ? 230 * this.direction : 0
     const targetX = gsap.utils.clamp(
       -this.maxPosition,
@@ -142,6 +168,7 @@ export class ByteMotionEngine {
   }
 
   playDemo() {
+    this.assertAlive()
     this.activeMotion = 'walk'
     this.callbacks.onMotionChange('walk')
     this.callbacks.onExpressionChange(null)
@@ -174,50 +201,59 @@ export class ByteMotionEngine {
   }
 
   togglePause() {
+    this.assertAlive()
     if (this.pauseReasons.has('user')) this.pauseReasons.delete('user')
     else this.pauseReasons.add('user')
     this.applyPauseState()
   }
 
   restart() {
+    this.assertAlive()
     this.timeline.restart()
     this.applyPauseState()
   }
 
   setProgress(progress: number) {
+    this.assertAlive()
     this.pauseReasons.add('user')
     this.timeline.progress(progress)
     this.applyPauseState()
   }
 
   setSpeed(speed: number) {
+    this.assertAlive()
     this.speed = speed
     this.timeline.timeScale(speed)
   }
 
   setPageVisible(visible: boolean) {
+    this.assertAlive()
     if (visible) this.pauseReasons.delete('visibility')
     else this.pauseReasons.add('visibility')
     this.applyPauseState()
   }
 
   setReducedMotion(enabled: boolean) {
+    this.assertAlive()
     this.reducedMotion = enabled
     this.play('idle')
   }
 
   setBounds(maxPosition: number) {
+    this.assertAlive()
     this.maxPosition = Math.max(60, maxPosition)
     this.positionX = gsap.utils.clamp(-this.maxPosition, this.maxPosition, this.positionX)
     gsap.set(this.wrap, { x: this.positionX })
   }
 
   setTracking(enabled: boolean) {
+    this.assertAlive()
     this.trackingEnabled = enabled
     if (!enabled) this.releaseAttention()
   }
 
   lookAt(normalizedX: number, normalizedY: number) {
+    this.assertAlive()
     if (!this.trackingEnabled || this.activeMotion !== 'idle') return
 
     const x = gsap.utils.clamp(-1, 1, normalizedX)
@@ -248,6 +284,7 @@ export class ByteMotionEngine {
   }
 
   releaseAttention() {
+    this.assertAlive()
     if (this.activeMotion !== 'idle') return
     this.callbacks.onAttentionStateChange('relaxed')
     gsap.to([this.eyes, this.head, this.antenna], {
@@ -261,6 +298,7 @@ export class ByteMotionEngine {
   }
 
   express(expression: Expression, focusDirection: -1 | 1 = this.direction) {
+    this.assertAlive()
     this.activeMotion = 'expression'
     this.callbacks.onExpressionChange(expression)
     this.callbacks.onAttentionStateChange(expression)
@@ -273,6 +311,7 @@ export class ByteMotionEngine {
   }
 
   interact(target: HTMLElement, targetX: number) {
+    this.assertAlive()
     this.activeMotion = 'interaction'
     this.callbacks.onExpressionChange(null)
     this.callbacks.onAttentionStateChange('focused')
@@ -419,6 +458,7 @@ export class ByteMotionEngine {
   }
 
   inspectOutOfReach(focusDirection: -1 | 1) {
+    this.assertAlive()
     this.activeMotion = 'interaction'
     this.callbacks.onExpressionChange(null)
     this.callbacks.onAttentionStateChange('curious')
@@ -480,6 +520,12 @@ export class ByteMotionEngine {
 
     if (this.pauseReasons.size > 0) this.timeline.pause(0)
     else this.timeline.play(0)
+  }
+
+  private assertAlive() {
+    if (this.destroyed) {
+      throw new Error('ByteMotionEngine has been destroyed')
+    }
   }
 
   private applyPauseState() {
