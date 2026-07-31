@@ -1,0 +1,40 @@
+import * as THREE from 'three'
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js'
+import { mkdir, writeFile } from 'node:fs/promises'
+
+if (!globalThis.FileReader) globalThis.FileReader = class FileReader {
+  result = null; onloadend = null
+  readAsArrayBuffer(blob) { blob.arrayBuffer().then(value => { this.result = value; this.onloadend?.() }) }
+  readAsDataURL(blob) { blob.arrayBuffer().then(value => { this.result = `data:${blob.type};base64,${Buffer.from(value).toString('base64')}`; this.onloadend?.() }) }
+}
+
+const root = new THREE.Group(); root.name = 'ByteProxy'
+const graphite = new THREE.MeshStandardMaterial({ color: 0x252d3b, roughness: 0.62, metalness: 0.22 })
+const orange = new THREE.MeshStandardMaterial({ color: 0xf2a51a, roughness: 0.55, metalness: 0.15 })
+const screen = new THREE.MeshStandardMaterial({ color: 0x071016, emissive: 0x00d8ef, emissiveIntensity: 0.2 })
+const cyan = new THREE.MeshStandardMaterial({ color: 0x75f7ff, emissive: 0x22dbe9, emissiveIntensity: 2 })
+const box = (name, size, position, material) => {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size, 2, 2, 2), material)
+  mesh.name = name; mesh.position.set(...position); return mesh
+}
+root.add(box('ByteBody', [1.65, 1.35, 0.9], [0, 1.55, 0], graphite))
+root.add(box('ByteChestScreen', [0.58, 0.55, 0.08], [0, 1.62, 0.49], screen))
+for (const x of [-0.15, 0, 0.15]) root.add(box('ChestPixel', [0.08, 0.08, 0.04], [x, 1.64, 0.55], cyan))
+root.add(box('ByteHead', [2.15, 1.52, 1.05], [0, 3.15, 0], graphite))
+root.add(box('ByteFace', [1.72, 1.05, 0.08], [0, 3.15, 0.57], screen))
+for (const x of [-0.42, 0.42]) root.add(box('EyePixel', [0.28, 0.42, 0.05], [x, 3.22, 0.63], cyan))
+root.add(box('Antenna', [0.12, 0.55, 0.12], [0, 4.18, 0], graphite))
+root.add(box('AntennaLight', [0.28, 0.24, 0.28], [0, 4.57, 0], cyan))
+const addLimb = (name, x, y, size) => {
+  const pivot = new THREE.Group(); pivot.name = name; pivot.position.set(x, y, 0)
+  pivot.add(box(`${name}Mesh`, size, [0, -size[1] / 2, 0], graphite)); root.add(pivot)
+}
+addLimb('ByteArmLeft', -1.05, 2.15, [0.42, 1.25, 0.48])
+addLimb('ByteArmRight', 1.05, 2.15, [0.42, 1.25, 0.48])
+addLimb('ByteLegLeft', -0.48, 0.9, [0.52, 0.92, 0.58])
+addLimb('ByteLegRight', 0.48, 0.9, [0.52, 0.92, 0.58])
+root.add(box('ByteFootLeft', [0.72, 0.34, 1.05], [-0.48, 0.2, 0.14], orange))
+root.add(box('ByteFootRight', [0.72, 0.34, 1.05], [0.48, 0.2, 0.14], orange))
+await mkdir('public/models', { recursive: true })
+const binary = await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true })
+await writeFile('public/models/byte-proxy.glb', Buffer.from(binary))

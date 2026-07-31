@@ -920,11 +920,24 @@ branch nova foi criada a partir da anterior.
 - sessões longas e vazamento de memória;
 - relatório comparativo desktop e mobile.
 
+### Protótipo 10 — Ponte 2D/3D — etapa 1
+
+- Three.js integrado sem remover o renderizador 2D;
+- seletor de renderização 2D/3D;
+- carregamento de modelo `.glb`;
+- modelo-proxy modular e reproduzível;
+- movimentos e expressões encaminhados pelo contrato existente;
+- descarte de renderer, frame, geometrias e materiais no ciclo de vida;
+- teste de navegador para carregamento e comandos 3D.
+
+O proxy é deliberadamente simples. Sua função é provar a arquitetura antes da
+modelagem definitiva do conceito aprovado do Byte.
+
 ### Protótipo final
 
 - Byte oficial;
-- spritesheet;
-- possível renderização PixiJS;
+- spritesheet para o modo 2D;
+- modelo GLB otimizado para o modo 3D;
 - otimização;
 - integração controlada com Tray.
 

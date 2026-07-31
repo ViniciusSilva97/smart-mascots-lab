@@ -163,6 +163,14 @@ kbd { border: 1px solid #464d4a; padding: 2px 4px; color: #a7afab; }
 .speech::after { content: ''; position: absolute; bottom: -10px; left: 50%; border: 6px solid transparent; border-top-color: #f4f1df; }
 
 .byte-wrap { position: absolute; left: 50%; bottom: 94px; width: 100px; height: 145px; transform: translateX(-50%) scale(var(--mascot-scale)); transform-origin: bottom; }
+.byte-3d-canvas { position: absolute; left: 50%; bottom: -48px; width: 230px; height: 250px; transform: translateX(-50%); display: none; pointer-events: none; }
+.byte-wrap[data-render-mode="3d"] .byte { visibility: hidden; }
+.byte-wrap[data-render-mode="3d"] .byte-3d-canvas { display: block; }
+.render-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+.render-mode button { padding: 9px; border: 1px solid #3b433f; background: #151918; color: #8e9893; cursor: pointer; font: 6px 'Press Start 2P'; }
+.render-mode button.active { color: var(--green); border-color: var(--green); background: rgba(121, 242, 68, .08); }
+.model-status { margin: 9px 0 0; color: #68736e; font: 5px 'Press Start 2P'; }
+.model-status strong { color: var(--yellow); }
 .byte { position: absolute; width: 100px; height: 140px; image-rendering: pixelated; }
 .antenna { position: absolute; width: 8px; height: 20px; background: var(--yellow); left: 46px; top: 0; box-shadow: 0 -7px 0 var(--green); }
 .head { position: absolute; left: 17px; top: 20px; width: 66px; height: 48px; border: 7px solid var(--yellow); background: #17201e; box-shadow: 6px 6px 0 #000; }

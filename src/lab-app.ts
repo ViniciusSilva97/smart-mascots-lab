@@ -18,6 +18,7 @@ import {
   type FrameMetrics,
   type PerformanceQuality,
 } from './performance-monitor'
+import { Byte3DView, type ByteRenderMode } from './byte-3d-view'
 
 export type MascotLab = {
   readonly destroyed: boolean
@@ -181,6 +182,13 @@ app.innerHTML = `
           </div>
         </div>
         <div class="separator"></div>
+        <span class="panel-label">RENDERIZAÇÃO</span>
+        <div class="render-mode" role="group" aria-label="Modo de renderização">
+          <button class="active" data-render-mode="2d" type="button">2D</button>
+          <button data-render-mode="3d" type="button">3D</button>
+        </div>
+        <p class="model-status">MODELO: <strong id="model-status">CARREGANDO</strong></p>
+        <div class="separator"></div>
         <span class="panel-label">ACESSIBILIDADE</span>
         <label for="motion-mode">MOVIMENTO</label>
         <select id="motion-mode" aria-label="Preferência de movimento">
@@ -228,6 +236,8 @@ app.innerHTML = `
 `
 
 const byte = app.querySelector<HTMLElement>('#byte')!
+const byteWrap = app.querySelector<HTMLElement>('#byte-wrap')!
+const byte3d = new Byte3DView(byteWrap, byte)
 const stage = app.querySelector<HTMLElement>('#stage')!
 const state = app.querySelector<HTMLElement>('#state')!
 const speech = app.querySelector<HTMLElement>('#speech')!
@@ -249,6 +259,7 @@ const frameTime = app.querySelector<HTMLElement>('#frame-time')!
 const frameP95 = app.querySelector<HTMLElement>('#frame-p95')!
 const droppedFrames = app.querySelector<HTMLElement>('#dropped-frames')!
 const visibilityState = app.querySelector<HTMLElement>('#visibility-state')!
+const modelStatus = app.querySelector<HTMLElement>('#model-status')!
 
 const locomotionLabels: Record<LocomotionState, string> = {
   idle: 'IDLE',
@@ -344,6 +355,7 @@ let orchestrator: CommandOrchestrator
 
 const engine = new ByteMotionEngine(byte, {
   onMotionChange(motion) {
+    byte3d.setMotion(motion)
     byte.dataset.motion = motion
     state.textContent = motions.find(item => item.id === motion)!.label.toUpperCase()
     speech.textContent = speechByMotion[motion]
@@ -364,6 +376,7 @@ const engine = new ByteMotionEngine(byte, {
     if (interactionState !== 'idle') state.textContent = interactionLabels[interactionState]
   },
   onExpressionChange(expression) {
+    byte3d.setExpression(expression)
     app.querySelectorAll('.expression-button').forEach(button => {
       button.classList.toggle(
         'active',
@@ -506,6 +519,18 @@ updateVisibility()
 const updateStageBounds = () => engine.setBounds(stage.clientWidth / 2 - 70)
 updateStageBounds()
 window.addEventListener('resize', updateStageBounds, { signal })
+
+app.querySelectorAll<HTMLButtonElement>('[data-render-mode]').forEach(button => {
+  button.addEventListener('click', () => {
+    const mode = button.dataset.renderMode as ByteRenderMode
+    const effectiveMode = byte3d.setMode(mode)
+    app.querySelectorAll<HTMLElement>('[data-render-mode]').forEach(item => {
+      item.classList.toggle('active', item.dataset.renderMode === effectiveMode)
+    })
+    const statusLabels: Record<string, string> = { ready: 'PRONTO', error: 'ERRO', unsupported: 'SEM WEBGL' }
+    modelStatus.textContent = statusLabels[byteWrap.dataset.modelStatus ?? ''] ?? 'CARREGANDO'
+  }, { signal })
+})
 
 app.querySelectorAll<HTMLButtonElement>('.motion-button').forEach(button => {
   button.addEventListener('click', () => {
@@ -686,6 +711,7 @@ const destroy = () => {
   listenerController.abort()
   if (targetMarkerFrame !== null) cancelAnimationFrame(targetMarkerFrame)
   performanceMonitor.destroy()
+  byte3d.destroy()
   orchestrator.destroy()
   engine.destroy()
 

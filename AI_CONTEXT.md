@@ -32,12 +32,12 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 09 — Robustez e testes de integração — etapa 2**
+**Protótipo 10 — Ponte de renderização 2D/3D — etapa 1**
 
 Branch canônica:
 
 ```text
-feature/robustness-integration-tests
+feature/byte-3d
 ```
 
 Commit de implementação:
@@ -96,6 +96,9 @@ Não adicionar React, Vue, Phaser, PixiJS ou Rive sem uma decisão explícita.
 | `playwright.config.ts` | projetos Chromium e servidor Vite de teste |
 | `.github/workflows/browser-tests.yml` | automação unitária e de navegador |
 | `src/style.css` | identidade, layout, Byte provisório e responsividade |
+| `src/byte-3d-view.ts` | Three.js, carregamento GLB, renderização e descarte do Byte 3D |
+| `public/models/byte-proxy.glb` | modelo modular de validação; ainda não é a arte definitiva |
+| `scripts/generate-byte-proxy.mjs` | geração reproduzível do GLB de validação |
 | `index.html` | shell de entrada |
 | `docs/TECHNICAL_GUIDE.md` | explicação humana completa |
 | `AI_CONTEXT.md` | continuidade para IA |
@@ -199,6 +202,19 @@ Todas as operações `destroy()` são idempotentes. Depois da destruição, uma
 tentativa de iniciar novo trabalho lança erro explícito. Isso é intencional:
 o Playwright deve detectar imediatamente qualquer listener ou callback
 residual.
+
+### 6.11 Ponte de renderização 2D/3D
+
+O modo 2D continua sendo o padrão e o fallback seguro. `Byte3DView` é uma
+camada visual: recebe movimento e expressão pelos mesmos callbacks do motor,
+carrega `/models/byte-proxy.glb` e renderiza apenas quando o modo 3D está ativo.
+
+O `byte-wrap` permanece como âncora de posição, escala e locomoção. Assim, o
+Three.js não duplica as regras de limites do palco. Ao desmontar o laboratório,
+o renderer, geometrias, materiais e frame de animação precisam ser liberados.
+
+O proxy 3D valida carregamento, desempenho e integração. Ele não substitui o
+modelo definitivo aprovado no conceito visual.
 
 ## 7. Erro histórico que não pode voltar
 

@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "asset:byte-proxy": "node scripts/generate-byte-proxy.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
@@ -14,11 +15,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "@types/three": "^0.185.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"
   },
   "dependencies": {
-    "gsap": "^3.15.0"
+    "gsap": "^3.15.0",
+    "three": "^0.185.1"
   }
 }
