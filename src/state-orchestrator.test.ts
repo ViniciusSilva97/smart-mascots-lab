@@ -118,4 +118,25 @@ describe('CommandOrchestrator', () => {
     expect(orchestrator.getSnapshot().active).toBeNull()
     expect(orchestrator.getSnapshot().queue).toEqual([])
   })
+
+  it('descarta comandos e observadores ao ser destruído', () => {
+    const onChange = vi.fn()
+    const orchestrator = new CommandOrchestrator(onChange)
+
+    orchestrator.dispatch(command('interaction', 40, vi.fn(), true))
+    orchestrator.dispatch(command('jump', 30))
+    const emissionsBeforeDestroy = onChange.mock.calls.length
+
+    orchestrator.destroy()
+    orchestrator.destroy()
+    orchestrator.completeActive()
+    orchestrator.clearQueue()
+
+    expect(orchestrator.getSnapshot().active).toBeNull()
+    expect(orchestrator.getSnapshot().queue).toEqual([])
+    expect(onChange).toHaveBeenCalledTimes(emissionsBeforeDestroy)
+    expect(() => orchestrator.dispatch(command('gesture', 10))).toThrow(
+      'has been destroyed',
+    )
+  })
 })
