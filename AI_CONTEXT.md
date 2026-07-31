@@ -32,7 +32,7 @@ o motor principal estar validado.
 
 ### 3.1 Protótipo atual
 
-**Protótipo 10 — Ponte de renderização 2D/3D — etapa 1**
+**Protótipo 10 — Ponte de renderização 2D/3D — etapa 2**
 
 Branch canônica:
 
@@ -215,6 +215,12 @@ o renderer, geometrias, materiais e frame de animação precisam ser liberados.
 
 O proxy 3D valida carregamento, desempenho e integração. Ele não substitui o
 modelo definitivo aprovado no conceito visual.
+
+Na etapa 2, `ByteMotionEngine` também publica olhar, direção e velocidade.
+`Byte3DView` recebe locomoção, salto e interação para animar os pivôs nomeados
+do GLB. Os olhos usam `ByteEyeLeft` e `ByteEyeRight`; membros usam os grupos
+`ByteArmLeft`, `ByteArmRight`, `ByteLegLeft` e `ByteLegRight`. Preserve esses
+nomes no modelo definitivo ou forneça um adaptador explícito.
 
 ## 7. Erro histórico que não pode voltar
 

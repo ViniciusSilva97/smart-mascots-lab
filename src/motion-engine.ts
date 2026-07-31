@@ -30,6 +30,9 @@ type EngineCallbacks = {
   onAttentionStateChange: (state: AttentionState) => void
   onInteractionStateChange: (state: InteractionState) => void
   onExpressionChange: (expression: Expression | null) => void
+  onLookAt: (x: number, y: number) => void
+  onFacingChange: (direction: -1 | 1) => void
+  onSpeedChange: (speed: number) => void
   onActionComplete: () => void
   onProgress: (progress: number) => void
   onPlayStateChange: (paused: boolean) => void
@@ -224,6 +227,7 @@ export class ByteMotionEngine {
     this.assertAlive()
     this.speed = speed
     this.timeline.timeScale(speed)
+    this.callbacks.onSpeedChange(speed)
   }
 
   setPageVisible(visible: boolean) {
@@ -259,6 +263,7 @@ export class ByteMotionEngine {
     const x = gsap.utils.clamp(-1, 1, normalizedX)
     const y = gsap.utils.clamp(-1, 1, normalizedY)
     this.callbacks.onAttentionStateChange('tracking')
+    this.callbacks.onLookAt(x, y)
 
     gsap.to(this.eyes, {
       x: x * 4,
@@ -287,6 +292,7 @@ export class ByteMotionEngine {
     this.assertAlive()
     if (this.activeMotion !== 'idle') return
     this.callbacks.onAttentionStateChange('relaxed')
+    this.callbacks.onLookAt(0, 0)
     gsap.to([this.eyes, this.head, this.antenna], {
       x: 0,
       y: 0,
@@ -331,6 +337,7 @@ export class ByteMotionEngine {
       const direction = (
         Math.abs(targetX - fromX) < 4 ? this.direction : targetX > fromX ? 1 : -1
       ) as -1 | 1
+      this.callbacks.onFacingChange(direction)
       const approachX = gsap.utils.clamp(
         -this.maxPosition,
         this.maxPosition,
@@ -474,6 +481,7 @@ export class ByteMotionEngine {
       timeline
         .call(() => {
           this.direction = focusDirection
+          this.callbacks.onFacingChange(focusDirection)
           this.callbacks.onInteractionStateChange('out-of-reach')
         })
         .to(this.byte, { scaleX: focusDirection, duration: 0.16, ease: 'power2.inOut' })
@@ -720,6 +728,7 @@ export class ByteMotionEngine {
     timeline
       .call(() => {
         this.direction = direction
+        this.callbacks.onFacingChange(direction)
         this.callbacks.onLocomotionStateChange('preparing')
       })
       .to(this.byte, { scaleX: direction, duration: 0.12, ease: 'power2.inOut' })
@@ -768,6 +777,7 @@ export class ByteMotionEngine {
     timeline
       .call(() => {
         this.direction = direction
+        this.callbacks.onFacingChange(direction)
         this.callbacks.onJumpStateChange('anticipating')
       })
       .to(this.byte, { scaleX: direction, duration: 0.1, ease: 'power2.inOut' })

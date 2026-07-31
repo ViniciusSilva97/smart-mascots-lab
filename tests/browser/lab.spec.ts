@@ -101,3 +101,23 @@ test('carrega o Byte 3D e preserva os comandos do engine', async ({ page }) => {
   await expect(page.locator('.byte-3d-canvas')).toBeVisible()
   expect(runtimeErrors).toEqual([])
 })
+
+test('encaminha locomoção, olhar e interação para o Byte 3D', async ({ page }) => {
+  const runtimeErrors = trackRuntimeErrors(page)
+  await openLab(page)
+  await page.locator('[data-render-mode="3d"]').click()
+
+  const stage = page.locator('#stage')
+  const bounds = await stage.boundingBox()
+  expect(bounds).not.toBeNull()
+  await page.mouse.move(bounds!.x + bounds!.width * 0.8, bounds!.y + bounds!.height * 0.3)
+  await expect(page.locator('#byte-wrap')).not.toHaveAttribute('data-gaze-x', '0.000')
+
+  await page.locator('#walk-right').click()
+  await expect(page.locator('#byte-wrap')).toHaveAttribute('data-locomotion3d', 'walking')
+
+  await page.locator('#stop-all').click()
+  await page.locator('.product-cpu').click()
+  await expect(page.locator('#byte-wrap')).toHaveAttribute('data-interaction3d', 'approaching')
+  expect(runtimeErrors).toEqual([])
+})

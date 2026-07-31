@@ -364,15 +364,18 @@ const engine = new ByteMotionEngine(byte, {
     })
   },
   onLocomotionStateChange(locomotionState) {
+    byte3d.setLocomotionState(locomotionState)
     state.textContent = locomotionLabels[locomotionState]
   },
   onJumpStateChange(jumpState) {
+    byte3d.setJumpState(jumpState)
     if (jumpState !== 'grounded') state.textContent = jumpLabels[jumpState]
   },
   onAttentionStateChange(attentionState) {
     state.textContent = attentionLabels[attentionState]
   },
   onInteractionStateChange(interactionState) {
+    byte3d.setInteractionState(interactionState)
     if (interactionState !== 'idle') state.textContent = interactionLabels[interactionState]
   },
   onExpressionChange(expression) {
@@ -383,6 +386,15 @@ const engine = new ByteMotionEngine(byte, {
         (button as HTMLElement).dataset.expression === expression,
       )
     })
+  },
+  onLookAt(x, y) {
+    byte3d.lookAt(x, y)
+  },
+  onFacingChange(direction) {
+    byte3d.setFacing(direction)
+  },
+  onSpeedChange(speed) {
+    byte3d.setSpeed(speed)
   },
   onActionComplete() {
     orchestrator.completeActive()

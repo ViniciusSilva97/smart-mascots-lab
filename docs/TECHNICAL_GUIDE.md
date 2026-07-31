@@ -933,6 +933,16 @@ branch nova foi criada a partir da anterior.
 O proxy é deliberadamente simples. Sua função é provar a arquitetura antes da
 modelagem definitiva do conceito aprovado do Byte.
 
+#### Etapa 2 — movimentos tridimensionais
+
+- pernas e braços respondem ao ciclo real de locomoção;
+- direção do deslocamento orienta o personagem;
+- olhos e cabeça acompanham as coordenadas do cursor;
+- expressões alteram forma e inclinação dos olhos;
+- estados de interação controlam aproximação, alcance, transporte e apresentação;
+- velocidade do painel também afeta a animação 3D;
+- nomes e pivôs do GLB foram preparados para controle independente.
+
 ### Protótipo final
 
 - Byte oficial;
