@@ -77,6 +77,7 @@ export class FramePerformanceMonitor {
   private lastTimestamp: number | null = null
   private lastEmission = 0
   private targetFps: 60 | 120 = 60
+  private destroyed = false
 
   constructor(
     onMetrics: MetricsListener,
@@ -91,6 +92,7 @@ export class FramePerformanceMonitor {
   }
 
   start(): void {
+    this.assertAlive()
     if (this.animationFrameId !== null) return
     this.lastTimestamp = null
     this.animationFrameId = this.requestFrame(this.measure)
@@ -103,13 +105,23 @@ export class FramePerformanceMonitor {
   }
 
   reset(): void {
+    this.assertAlive()
     this.frameTimes.length = 0
     this.lastTimestamp = null
     this.lastEmission = 0
     this.targetFps = 60
   }
 
+  destroy(): void {
+    if (this.destroyed) return
+    this.destroyed = true
+    this.stop()
+    this.frameTimes.length = 0
+  }
+
   private readonly measure = (timestamp: number) => {
+    if (this.destroyed) return
+
     if (this.lastTimestamp !== null) {
       const frameTime = timestamp - this.lastTimestamp
       if (frameTime > 0 && frameTime < 250) {
@@ -129,6 +141,14 @@ export class FramePerformanceMonitor {
       this.lastEmission = timestamp
     }
 
-    this.animationFrameId = this.requestFrame(this.measure)
+    if (!this.destroyed) {
+      this.animationFrameId = this.requestFrame(this.measure)
+    }
+  }
+
+  private assertAlive(): void {
+    if (this.destroyed) {
+      throw new Error('FramePerformanceMonitor has been destroyed')
+    }
   }
 }
