@@ -43,8 +43,8 @@ feature/robustness-integration-tests
 Commit de implementação:
 
 ```text
-1e249cd110f16365cb035351989ba9a4dc6c7b90
-feat: add explicit mascot lifecycle
+70a6b56cd3179dbc26e8fcf8792c696c2d54591b
+feat: mount mascot lab through lifecycle entry
 ```
 
 ### 3.2 Histórico
@@ -63,7 +63,7 @@ feat: add explicit mascot lifecycle
 | Protótipo 07 | `feature/state-orchestrator` | `4bfd05f` |
 | Protótipo 08 | `feature/performance-accessibility` | `f4d387b` |
 | Protótipo 09 — etapa 1 | `feature/robustness-integration-tests` | `1f817b2` |
-| Protótipo 09 — etapa 2 | `feature/robustness-integration-tests` | `1e249cd` |
+| Protótipo 09 — etapa 2 | `feature/robustness-integration-tests` | `70a6b56` |
 
 Cada branch deriva da anterior. Não orientar o usuário a mesclar Protótipo 01
 antes de testar o 02 ou 03.
@@ -641,17 +641,17 @@ Próximo passo:
 ### 2026-07-30 — Protótipo 09, etapa 2
 
 - **Branch:** `feature/robustness-integration-tests`.
-- **Commit local de implementação:** `1e249cd110f16365cb035351989ba9a4dc6c7b90`.
+- **Commit remoto de implementação:** `70a6b56cd3179dbc26e8fcf8792c696c2d54591b`.
 - **Objetivo:** permitir desmontar e remontar o laboratório sem trabalho
   residual.
 - **Mudanças:** fábrica `createMascotLab`, entrada com montagem única,
   desmontagem idempotente, listeners agrupados por `AbortController`,
   cancelamento de frames, timelines e tweens, destruição do monitor e do
   orquestrador e novo cenário Playwright de remontagem.
-- **Validação local:** 15 testes unitários, TypeScript, build Vite e
-  `git diff --check` aprovados. O Chromium local não pôde ser baixado porque o
-  ambiente bloqueou o CDN do Playwright; os oito casos ficam sob validação do
-  workflow GitHub Actions.
+- **Validação:** 15 testes unitários, TypeScript, build Vite e
+  `git diff --check` aprovados localmente. O GitHub Actions aprovou os oito
+  casos Playwright no Chromium, em desktop e mobile, incluindo desmontagem e
+  remontagem sem erros residuais.
 - **Limitação:** ainda não há múltiplas instâncias simultâneas, sessão longa
   nem aferição de memória.
 - **Próximo passo:** criar um cenário multi-Byte e medir custo e estabilidade
