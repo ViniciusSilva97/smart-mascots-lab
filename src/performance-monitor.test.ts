@@ -40,6 +40,26 @@ describe('performance monitor', () => {
     expect(cancelFrame).toHaveBeenCalledWith(42)
   })
 
+  it('encerra o loop de frames de forma idempotente', () => {
+    let pendingFrame: FrameRequestCallback | null = null
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      pendingFrame = callback
+      return 7
+    })
+    const cancelFrame = vi.fn()
+    const monitor = new FramePerformanceMonitor(vi.fn(), requestFrame, cancelFrame)
+
+    monitor.start()
+    monitor.destroy()
+    monitor.destroy()
+    ;(pendingFrame as FrameRequestCallback | null)?.(16)
+
+    expect(requestFrame).toHaveBeenCalledOnce()
+    expect(cancelFrame).toHaveBeenCalledOnce()
+    expect(cancelFrame).toHaveBeenCalledWith(7)
+    expect(() => monitor.start()).toThrow('has been destroyed')
+  })
+
   it('detecta uma tela próxima de 60 Hz', () => {
     expect(detectTargetFps(Array(40).fill(16.67))).toBe(60)
   })
