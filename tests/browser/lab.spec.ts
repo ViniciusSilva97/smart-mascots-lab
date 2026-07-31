@@ -66,3 +66,26 @@ test('mantém os comandos funcionais no modo reduzido', async ({ page }) => {
   expect(Math.abs(after!.x - before!.x)).toBeGreaterThan(50)
   expect(runtimeErrors).toEqual([])
 })
+
+test('desmonta e remonta sem listeners ou callbacks residuais', async ({ page }) => {
+  const runtimeErrors = trackRuntimeErrors(page)
+
+  await openLab(page)
+  await page.evaluate(async () => {
+    const lab = await import('/src/main.ts')
+    lab.destroyLab()
+    lab.destroyLab()
+    lab.mountLab()
+    lab.mountLab()
+    lab.destroyLab()
+    lab.mountLab()
+  })
+
+  await expect(page.locator('.lab-status')).toHaveText('LAB ONLINE')
+  await expect(page.locator('#fps-value')).not.toHaveText('--', {
+    timeout: 5_000,
+  })
+  await page.keyboard.press('4')
+  await expect(page.locator('#command-active')).toHaveText('APONTAR')
+  expect(runtimeErrors).toEqual([])
+})
